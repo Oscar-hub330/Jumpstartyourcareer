@@ -17,7 +17,7 @@ import HlanyisekaImg from "../assets/hlayiseka.jpeg";
 import InnocentImg from "../assets/innocent.jpeg";
 import lesediImg from "../assets/lesedi.jpeg";
 import MxolisiImg from "../assets/mxolisi.jpeg";
-import NondumisoHRImg from "../assets/NondumisoHR.jpeg";
+import NondumisoHRImg from "../assets/nondumisoHR.jpeg";
 import NokuthulamImg from "../assets/nokuthulaM.jpeg";
 import OscarImg from "../assets/oscar.jpeg";
 import TshepisoImg from "../assets/tshepiso.jpeg";
