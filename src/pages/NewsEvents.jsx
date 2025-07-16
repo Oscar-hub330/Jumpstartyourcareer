@@ -1,9 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Container,
   Typography,
   Card,
-  CardMedia,
   CardContent,
   Button,
   Grid,
@@ -12,28 +11,7 @@ import {
 } from "@mui/material";
 import Footer from "../components/Footer";
 import backgroundImg from "../assets/car.svg";
-
-const newsletters = [
-  {
-    title: "March 2022",
-    image: "/newsletters/images/march-2022.jpg",
-    pdf: "/newsletters/newsletter-march-2022.pdf",
-    description: "This edition covers our latest programs on youth digital skills training.",
-  },
-  {
-    title: "February 2022",
-    image: "/newsletters/images/february-2022.jpg",
-    pdf: "/newsletters/newsletter-february-2022.pdf",
-    description: "Highlights from the Entrepreneurship Bootcamp held in January.",
-  },
-  {
-    title: "January 2022",
-    image: "/newsletters/images/january-2022.jpg",
-    pdf: "/newsletters/newsletter-january-2022.pdf",
-    description: "Kickstarting the year with new community outreach projects.",
-  },
-  // add other newsletters similarly
-];
+import axios from "axios";
 
 // Styles for modal box
 const modalStyle = {
@@ -51,8 +29,23 @@ const modalStyle = {
 };
 
 const NewsEvents = () => {
+  const [newsletters, setNewsletters] = useState([]);
   const [open, setOpen] = useState(false);
   const [selectedNewsletter, setSelectedNewsletter] = useState(null);
+
+  // 🔁 Fetch newsletters from backend
+  useEffect(() => {
+    const fetchNewsletters = async () => {
+      try {
+        const res = await axios.get("http://localhost:5000/api/newsletters");
+        setNewsletters(res.data);
+      } catch (err) {
+        console.error("Failed to fetch newsletters:", err);
+      }
+    };
+
+    fetchNewsletters();
+  }, []);
 
   const handleOpen = (newsletter) => {
     setSelectedNewsletter(newsletter);
@@ -85,48 +78,57 @@ const NewsEvents = () => {
 
       <Container sx={{ py: 8 }}>
         <Grid container spacing={4}>
-          {newsletters.map(({ title, image, pdf, description }, idx) => (
-            <Grid item key={idx} xs={12} sm={6} md={4} lg={3}>
-              <Card sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
-                <CardMedia
-                  component="img"
-                  image={image}
-                  alt={`${title} newsletter image`}
-                  sx={{ height: 160 }}
-                />
-                <CardContent sx={{ flexGrow: 1 }}>
-                  <Typography
-                    gutterBottom
-                    variant="h6"
-                    component="h2"
-                    color="#fea434"
-                    textAlign="center"
-                    mb={2}
-                  >
-                    {title}
-                  </Typography>
+          {newsletters.length === 0 ? (
+            <Typography variant="h6" color="textSecondary">
+              No newsletters found.
+            </Typography>
+          ) : (
+            newsletters.map((newsletter, idx) => (
+              <Grid item key={idx} xs={12} sm={6} md={4} lg={3}>
+                <Card sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
+                  <CardContent sx={{ flexGrow: 1 }}>
+                    <Typography
+                      gutterBottom
+                      variant="h6"
+                      component="h2"
+                      color="#fea434"
+                      textAlign="center"
+                      mb={2}
+                    >
+                      Newsletter #{newsletter.templateIndex}
+                    </Typography>
 
-                  <Box display="flex" justifyContent="space-between" gap={1}>
-                    <Button
-                      variant="outlined"
-                      sx={{ color: "#fea434", borderColor: "#fea434", flexGrow: 1 }}
-                      onClick={() => handleOpen({ title, description })}
-                    >
-                      Read More
-                    </Button>
-                    <Button
-                      variant="contained"
-                      sx={{ backgroundColor: "#fea434", flexGrow: 1, "&:hover": { backgroundColor: "#e69420" } }}
-                      href={pdf}
-                      download
-                    >
-                      Download PDF
-                    </Button>
-                  </Box>
-                </CardContent>
-              </Card>
-            </Grid>
-          ))}
+                    {newsletter.sections.length > 0 && (
+                      <Typography variant="body2" mb={2}>
+                        {newsletter.sections[0].title}: {newsletter.sections[0].content}
+                      </Typography>
+                    )}
+
+                    <Box display="flex" justifyContent="space-between" gap={1}>
+                      <Button
+                        variant="outlined"
+                        sx={{ color: "#fea434", borderColor: "#fea434", flexGrow: 1 }}
+                        onClick={() => handleOpen(newsletter)}
+                      >
+                        Read More
+                      </Button>
+
+                      {newsletter.pdfUrl && (
+                        <Button
+                          variant="contained"
+                          sx={{ backgroundColor: "#fea434", flexGrow: 1, "&:hover": { backgroundColor: "#e69420" } }}
+                          href={newsletter.pdfUrl}
+                          download
+                        >
+                          Download PDF
+                        </Button>
+                      )}
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Grid>
+            ))
+          )}
         </Grid>
       </Container>
 
@@ -134,10 +136,10 @@ const NewsEvents = () => {
       <Modal open={open} onClose={handleClose} aria-labelledby="modal-title" aria-describedby="modal-description">
         <Box sx={modalStyle}>
           <Typography id="modal-title" variant="h5" mb={2} color="#fea434">
-            {selectedNewsletter?.title}
+            {selectedNewsletter?.sections[0]?.title}
           </Typography>
           <Typography id="modal-description" variant="body1" mb={4}>
-            {selectedNewsletter?.description}
+            {selectedNewsletter?.sections[0]?.content}
           </Typography>
           <Button variant="contained" onClick={handleClose} sx={{ backgroundColor: "#fea434" }}>
             Close

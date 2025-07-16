@@ -7,13 +7,24 @@ router.post("/", async (req, res) => {
   try {
     const { templateIndex, sections } = req.body;
 
-    if (!templateIndex || !sections) {
+    if (templateIndex === undefined || !sections) {
       return res.status(400).json({ error: "Missing templateIndex or sections" });
     }
 
+    // Parse sections if it's a JSON string
+    let parsedSections;
+    try {
+      parsedSections = Array.isArray(sections)
+        ? sections
+        : JSON.parse(sections);
+    } catch (parseErr) {
+      return res.status(400).json({ error: "Invalid JSON format in sections" });
+    }
+
+    // You can optionally process images in the future here
     const newsletter = new Newsletter({
       templateIndex,
-      sections,
+      sections: parsedSections,
       pdfUrl: null, // Skipping PDF for now
     });
 

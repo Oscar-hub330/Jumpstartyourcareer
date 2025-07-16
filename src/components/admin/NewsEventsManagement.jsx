@@ -115,29 +115,65 @@ const NewsEventsManagement = () => {
     return true;
   };
 
-  const handlePublish = () => {
-    if (!publishOptions.publishContent && !publishOptions.publishPdf) {
-      alert("Please select at least one publishing option");
-      return;
-    }
+const handlePublish = async () => {
+  if (!publishOptions.publishContent && !publishOptions.publishPdf) {
+    alert("Please select at least one publishing option");
+    return;
+  }
 
-    if (publishOptions.publishPdf && !pdfFile) {
-      alert("Please upload a PDF file if you want to publish PDF");
-      return;
-    }
+  if (publishOptions.publishPdf && !pdfFile) {
+    alert("Please upload a PDF file if you want to publish PDF");
+    return;
+  }
 
-    if (publishOptions.publishContent && !validateTemplate()) {
-      alert(
-        "Please fill in title, date, paragraph for all sections, and writer's name on the first section."
-      );
-      return;
-    }
+  if (publishOptions.publishContent && !validateTemplate()) {
+    alert(
+      "Please fill in title, date, paragraph for all sections, and writer's name on the first section."
+    );
+    return;
+  }
 
-    // Here you would typically make an API call to publish the newsletter
-    console.log("Publishing with options:", publishOptions);
-    alert("Newsletter published successfully!");
-    setPublishDialogOpen(false);
-  };
+  const formData = new FormData();
+
+  // Prepare a clone to send text fields
+  const textOnlySections = newsletterTemplates[templateIndex].map((section, idx) => {
+    const newSec = { ...section, images: [] }; // we'll handle images separately
+
+    section.images.forEach((img, i) => {
+      formData.append(`images`, img.file); // add image files
+    });
+
+    return newSec;
+  });
+
+  formData.append("templateIndex", templateIndex);
+  formData.append("sections", JSON.stringify(textOnlySections));
+
+  if (pdfFile) {
+    formData.append("pdf", pdfFile);
+  }
+
+  try {
+    const res = await fetch("http://localhost:5000/api/newsletters", {
+      method: "POST",
+      body: formData,
+    });
+
+    const result = await res.json();
+
+    if (res.ok) {
+      alert("✅ Newsletter published successfully!");
+      setPublishDialogOpen(false);
+      setPdfFile(null);
+    } else {
+      alert(`❌ Error: ${result.error}`);
+    }
+  } catch (error) {
+    console.error("Publish error:", error);
+    alert("❌ Failed to publish newsletter");
+  }
+};
+
 
   return (
     <Box sx={{ p: 4 }}>
