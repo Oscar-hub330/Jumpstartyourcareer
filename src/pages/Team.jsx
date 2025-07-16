@@ -9,7 +9,7 @@ import {
   CardMedia,
 } from "@mui/material";
 
-import PhelepheImg from "../assets/Phelephe.png";
+// import PhelepheImg from "../assets/Phelephe.png";
 import CeliweImg from "../assets/celiwe.jpeg";
 import FortunateImg from "../assets/fortunate.jpeg";
 import GoodnessImg from "../assets/goodness.jpeg";
@@ -29,7 +29,7 @@ const leadership = [
     name: "Pleasure",
     surname: "Phelephe",
     position: "Centre Manager",
-    image: PhelepheImg,
+   // image: PhelepheImg,
   },
   {
     name: "Hlayiseka",
