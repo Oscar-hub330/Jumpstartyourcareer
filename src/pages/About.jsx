@@ -1,4 +1,4 @@
-import React from "react";
+import React, { } from "react";
 import { Container, Typography, Card, CardContent, Box } from "@mui/material";
 import Slider from "react-slick";
 import Footer from "../components/Footer";
@@ -13,7 +13,7 @@ import FpmSetaLogo from "../assets/sponsors/fpmseta.png";
 import PublicWorksLogo from "../assets/sponsors/publicworks.png";
 import ThaboMbekiFoundationLogo from "../assets/sponsors/thabombekifoundation.png";
 import DsdLogo from "../assets/sponsors/dsd.png";
-import QCTOlogo from "../assets/sponsors/QCTOlogo.png"
+import QCTOlogo from "../assets/sponsors/QCTOlogo.png";
 
 const sponsors = [
   { name: "Thabo Mbeki Foundation", logo: ThaboMbekiFoundationLogo },
@@ -25,17 +25,18 @@ const sponsors = [
   { name: "Chieta", logo: ChietaLogo },
   { name: "FP&M Seta", logo: FpmSetaLogo },
   { name: "Department of Public Works", logo: PublicWorksLogo },
-   { name: "QCTOlogo", logo: QCTOlogo },
+  { name: "QCTO", logo: QCTOlogo },
 ];
 
 const sponsorSettings = {
   dots: true,
   infinite: true,
-  speed: 400,
-  slidesToShow: 4,
-  slidesToScroll: 1,
+  speed: 500,
   autoplay: true,
   autoplaySpeed: 2500,
+  lazyLoad: "ondemand", // ✅ Lazy load sponsor logos
+  slidesToShow: 4,
+  slidesToScroll: 1,
   responsive: [
     { breakpoint: 1024, settings: { slidesToShow: 3 } },
     { breakpoint: 768, settings: { slidesToShow: 2 } },
@@ -43,13 +44,15 @@ const sponsorSettings = {
   ],
 };
 
+const whiteCardGradient =
+  "linear-gradient(135deg, rgba(255,255,255,0.95), rgba(245,250,255,0.92))";
+
+const futuristicBg =
+  "linear-gradient(135deg, #fffaf5, #fef0e5, #ffe5cb)"; // ✅ New background
+
+
+
 const About = () => {
-  const futuristicBg =
-    "linear-gradient(135deg, #f4f8ff, #e5edff, #d8e5ff, #e0ecff)";
-
-  const whiteCardGradient =
-    "linear-gradient(135deg, rgba(255,255,255,0.95), rgba(245,250,255,0.92))";
-
   return (
     <div
       className="text-orange-400 min-h-screen"
@@ -59,20 +62,19 @@ const About = () => {
         paddingBottom: "2rem",
       }}
     >
-      {/* Hero Section - Fully transparent */}
+      {/* Hero */}
       <section className="py-10 mx-4 mt-6">
         <Container maxWidth="md" className="text-center">
           <Typography
             variant="h4"
             className="font-bold text-[#fea434] mb-6 tracking-wide"
-            gutterBottom
           >
             About Us
           </Typography>
           <Typography
             variant="body1"
             className="text-gray-800 text-lg leading-relaxed px-2 md:px-8"
-            style={{
+            sx={{
               fontWeight: 400,
               textShadow: "0px 1px 2px rgba(255,255,255,0.3)",
             }}
@@ -91,21 +93,19 @@ const About = () => {
             {[
               {
                 title: "Vision",
-                desc: "A society were both rural youth and women will use their skills to contribute meaningfully into the community.",
+                desc: "A society where both rural youth and women use their skills to contribute meaningfully to the community.",
               },
               {
                 title: "Mission",
-                desc: "As we ensure that NO ONE IS LEFT BEHIND, We seek to empower rural youth and women with different skills especially digital literacy and entrepreneurship therefore fostering innovation. ",
-              
+                desc: "We empower rural youth and women with various skills—especially digital literacy and entrepreneurship—ensuring no one is left behind.",
               },
-              
               {
                 title: "Values",
                 desc: "Empowerment, Integrity, Innovation, Inclusivity, and Impact.",
               },
-            ].map((item, idx) => (
+            ].map((item, index) => (
               <Card
-                key={idx}
+                key={index}
                 sx={{
                   border: "2px solid #fea434",
                   borderRadius: 2,
@@ -133,7 +133,7 @@ const About = () => {
         </Container>
       </section>
 
-      {/* Sponsors Section */}
+      {/* Sponsors */}
       <section className="py-0 mx-4 mt-6 mb-8">
         <Container maxWidth="lg">
           <Typography
@@ -165,15 +165,16 @@ const About = () => {
                     px: 2,
                   }}
                 >
-                  
                   <Box
                     component="img"
                     src={sponsor.logo}
                     alt={`${sponsor.name} logo`}
+                    loading="lazy" // ✅ Lazy loading added
                     sx={{
                       maxHeight: 100,
                       maxWidth: "100%",
                       objectFit: "contain",
+                      transition: "opacity 0.5s ease-in-out",
                     }}
                   />
                 </Box>
@@ -197,7 +198,6 @@ const About = () => {
             <Typography
               variant="h5"
               className="text-[#fea434] font-bold tracking-wide mb-4"
-              gutterBottom
             >
               Ready to make a difference?
             </Typography>

@@ -32,10 +32,8 @@ const newsletters = [
     pdf: "/newsletters/newsletter-january-2022.pdf",
     description: "Kickstarting the year with new community outreach projects.",
   },
-  // add other newsletters similarly
 ];
 
-// Styles for modal box
 const modalStyle = {
   position: "absolute",
   top: "50%",
@@ -48,6 +46,7 @@ const modalStyle = {
   maxWidth: 600,
   width: "90%",
   outline: "none",
+  textAlign: "center",
 };
 
 const NewsEvents = () => {
@@ -66,61 +65,103 @@ const NewsEvents = () => {
 
   return (
     <div
-      style={{
-        backgroundImage: `url(${backgroundImg})`,
-        backgroundAttachment: "fixed",
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        minHeight: "100vh",
-      }}
+      className="min-h-screen bg-cover bg-center bg-fixed"
+      style={{ backgroundImage: `url(${backgroundImg})` }}
     >
-      <div className="bg-black bg-opacity-70 py-16 text-center text-white">
-        <Typography variant="h3" className="font-bold mb-2 text-[#fea434]">
+      {/* Hero Section */}
+      <div className="bg-black bg-opacity-70 py-11px2 text-white text-center">
+        <Typography
+          variant="h3"
+          className="font-bold mb-4 text-[#fea434] text-3xl sm:text-4xl md:text-5xl"
+        >
           Newsletters Archive
         </Typography>
-        <Typography variant="subtitle1" gutterBottom>
-          Browse and download our newsletters by month and year.
-        </Typography>
+        <Typography
+  variant="subtitle1"
+  sx={{
+    maxWidth: "640px", // equivalent to Tailwind's max-w-2xl
+    mx: "auto",         // horizontal auto margin to center
+    textAlign: "center",
+    fontSize: { xs: "1rem", sm: "1.125rem" }, // responsive text sizing
+  }}
+>
+  Browse and download our newsletters by month and year.
+</Typography>
+
       </div>
 
-      <Container sx={{ py: 8 }}>
-        <Grid container spacing={4}>
+      {/* Newsletter Grid */}
+      <Container maxWidth="xl" sx={{ py: 6 }}>
+        <Grid
+          container
+          spacing={4}
+          justifyContent="center"
+        >
           {newsletters.map(({ title, image, pdf, description }, idx) => (
             <Grid item key={idx} xs={12} sm={6} md={4} lg={3}>
-              <Card sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
+              <Card
+                sx={{
+                  height: "100%",
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "space-between",
+                  boxShadow: 3,
+                  textAlign: "center",
+                }}
+              >
                 <CardMedia
                   component="img"
                   image={image}
                   alt={`${title} newsletter image`}
-                  sx={{ height: 160 }}
+                  loading="lazy"
+                  sx={{ height: 160, objectFit: "cover" }}
                 />
-                <CardContent sx={{ flexGrow: 1 }}>
+                <CardContent
+                  sx={{
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "space-between",
+                    flexGrow: 1,
+                    gap: 2,
+                    textAlign: "center",
+                  }}
+                >
                   <Typography
-                    gutterBottom
                     variant="h6"
                     component="h2"
                     color="#fea434"
-                    textAlign="center"
-                    mb={2}
+                    fontWeight={600}
                   >
                     {title}
                   </Typography>
 
-                  <Box display="flex" justifyContent="space-between" gap={1}>
+                  <Box display="flex" flexDirection="column" gap={1}>
                     <Button
                       variant="outlined"
-                      sx={{ color: "#fea434", borderColor: "#fea434", flexGrow: 1 }}
                       onClick={() => handleOpen({ title, description })}
+                      sx={{
+                        color: "#fea434",
+                        borderColor: "#fea434",
+                        "&:hover": {
+                          backgroundColor: "#fff8f0",
+                          borderColor: "#fea434",
+                        },
+                      }}
                     >
                       Read More
                     </Button>
                     <Button
                       variant="contained"
-                      sx={{ backgroundColor: "#fea434", flexGrow: 1, "&:hover": { backgroundColor: "#e69420" } }}
                       href={pdf}
                       download
+                      sx={{
+                        backgroundColor: "#fea434",
+                        "&:hover": {
+                          backgroundColor: "#e69420",
+                        },
+                      }}
                     >
-                      Download PDF
+                      Download
                     </Button>
                   </Box>
                 </CardContent>
@@ -130,16 +171,29 @@ const NewsEvents = () => {
         </Grid>
       </Container>
 
-      {/* Modal for Read More */}
-      <Modal open={open} onClose={handleClose} aria-labelledby="modal-title" aria-describedby="modal-description">
+      {/* Modal */}
+      <Modal open={open} onClose={handleClose}>
         <Box sx={modalStyle}>
-          <Typography id="modal-title" variant="h5" mb={2} color="#fea434">
+          <Typography
+            id="modal-title"
+            variant="h5"
+            mb={2}
+            color="#fea434"
+            fontWeight={700}
+          >
             {selectedNewsletter?.title}
           </Typography>
           <Typography id="modal-description" variant="body1" mb={4}>
             {selectedNewsletter?.description}
           </Typography>
-          <Button variant="contained" onClick={handleClose} sx={{ backgroundColor: "#fea434" }}>
+          <Button
+            variant="contained"
+            onClick={handleClose}
+            sx={{
+              backgroundColor: "#fea434",
+              "&:hover": { backgroundColor: "#e69420" },
+            }}
+          >
             Close
           </Button>
         </Box>

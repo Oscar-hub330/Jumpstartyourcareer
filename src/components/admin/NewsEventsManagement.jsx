@@ -1,714 +1,536 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Typography,
-  TextField,
   Button,
   Card,
   CardContent,
   IconButton,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  FormControlLabel,
-  Switch,
+  CircularProgress,
+  Alert,
+  Snackbar,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
+  FormControlLabel,
+  Switch,
+  Divider,
+  Chip,
+  Backdrop,
 } from "@mui/material";
 import {
   Delete,
-  Image as ImageIcon,
-  Add,
-  Preview,
-  Cancel,
   Publish,
   PictureAsPdf,
+  CloudUpload,
+  Refresh,
 } from "@mui/icons-material";
 import { Document, Page } from "react-pdf";
 import { pdfjs } from "react-pdf";
-import jumpstartLogo from "../../assets/jumpstartLogo.png";
 
+// Initialize PDF.js worker
 pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
 
-const defaultSection = () => ({
-  title: "",
-  date: "",
-  paragraph: "",
-  images: [],
-  writerName: "",
-  paragraphAlign: "left",
-  imageAlign: "left",
-});
-
 const NewsEventsManagement = () => {
-  const [templateIndex, setTemplateIndex] = useState(0);
-  const [newsletterTemplates, setNewsletterTemplates] = useState(
-    Array.from({ length: 10 }, () => [defaultSection()])
-  );
-  const [previewing, setPreviewing] = useState(false);
   const [pdfFile, setPdfFile] = useState(null);
-  const [numPages, setNumPages] = useState(null);
   const [publishDialogOpen, setPublishDialogOpen] = useState(false);
   const [publishOptions, setPublishOptions] = useState({
-    publishContent: true,
-    publishPdf: false,
-    sendEmail: true,
+    isPublished: true,
+    notifySubscribers: true,
   });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "info",
+  });
+  const [existingNewsletters, setExistingNewsletters] = useState([]);
+  const [isMounted, setIsMounted] = useState(false);
 
-  const handleSectionChange = (sectionIdx, field, value) => {
-    const updated = [...newsletterTemplates];
-    updated[templateIndex][sectionIdx][field] = value;
-    setNewsletterTemplates(updated);
-  };
+  // Set mounted state to prevent memory leaks
+  useEffect(() => {
+    setIsMounted(true);
+    return () => setIsMounted(false);
+  }, []);
 
-  const addSection = () => {
-    const updated = [...newsletterTemplates];
-    updated[templateIndex].push(defaultSection());
-    setNewsletterTemplates(updated);
-  };
+  // Fetch existing newsletters
+  useEffect(() => {
+    if (!isMounted) return;
 
-  const removeSection = (sectionIdx) => {
-    const updated = [...newsletterTemplates];
-    updated[templateIndex].splice(sectionIdx, 1);
-    setNewsletterTemplates(updated);
-  };
+    const fetchNewsletters = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // Simulate API call - replace with actual fetch
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Mock data - replace with your actual API response
+        const mockData = [
+          {
+            id: 1,
+            title: "Monthly Newsletter - June 2023",
+            fileUrl: "/sample-newsletter.pdf",
+            publishDate: new Date("2023-06-15").toISOString(),
+            isPublished: true,
+          },
+          {
+            id: 2,
+            title: "Special Edition - Spring 2023",
+            fileUrl: "/spring-newsletter.pdf",
+            publishDate: new Date("2023-03-20").toISOString(),
+            isPublished: true,
+          },
+        ];
 
-  const addImageToSection = (e, sectionIdx) => {
-    const file = e.target.files[0];
-    if (!file) return;
+        if (isMounted) {
+          setExistingNewsletters(mockData);
+        }
+      } catch {
+        if (isMounted) {
+          setError("Failed to load newsletters. Please try again later.");
+          console.error("Fetch error");
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
 
-    const updated = [...newsletterTemplates];
-    const url = URL.createObjectURL(file);
-    updated[templateIndex][sectionIdx].images.push({ file, url });
-    setNewsletterTemplates(updated);
-  };
-
-  const removeImageFromSection = (sectionIdx, imageIdx) => {
-    const updated = [...newsletterTemplates];
-    updated[templateIndex][sectionIdx].images.splice(imageIdx, 1);
-    setNewsletterTemplates(updated);
-  };
+    fetchNewsletters();
+  }, [isMounted]);
 
   const handlePdfUpload = (e) => {
-    const file = e.target.files[0];
-    if (file && file.type === "application/pdf") {
+    try {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      if (file.type !== "application/pdf") {
+        throw new Error("Please select a valid PDF file");
+      }
+
+      if (file.size > 10 * 1024 * 1024) { // 10MB limit
+        throw new Error("File size must be less than 10MB");
+      }
+
       setPdfFile(file);
+      setError(null);
+    } catch {
+      setSnackbar({
+        open: true,
+        message: "Please select a valid PDF file",
+        severity: "error",
+      });
+      console.error("Upload error");
     }
   };
 
+  // eslint-disable-next-line no-unused-vars
   const onDocumentLoadSuccess = ({ numPages }) => {
-    setNumPages(numPages);
+    // PDF loaded successfully
   };
 
-  const validateTemplate = () => {
-    const sections = newsletterTemplates[templateIndex];
-    if (!sections.length) return false;
-    for (let i = 0; i < sections.length; i++) {
-      const sec = sections[i];
-      if (!sec.title.trim() || !sec.paragraph.trim()) return false;
-      if (i === 0 && !sec.writerName.trim()) return false;
-      if (!sec.date) return false;
-    }
-    return true;
-  };
-
-  const handlePublish = () => {
-    if (!publishOptions.publishContent && !publishOptions.publishPdf) {
-      alert("Please select at least one publishing option");
+  const handlePublish = async () => {
+    if (!pdfFile) {
+      setSnackbar({
+        open: true,
+        message: "Please upload a PDF file first",
+        severity: "error",
+      });
       return;
     }
 
-    if (publishOptions.publishPdf && !pdfFile) {
-      alert("Please upload a PDF file if you want to publish PDF");
-      return;
-    }
+    try {
+      setLoading(true);
+      
+      // Simulate upload delay
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // Create new newsletter object
+      const newNewsletter = {
+        id: Date.now(),
+        title: pdfFile.name.replace(".pdf", ""),
+        fileUrl: URL.createObjectURL(pdfFile),
+        publishDate: new Date().toISOString(),
+        isPublished: publishOptions.isPublished,
+      };
 
-    if (publishOptions.publishContent && !validateTemplate()) {
-      alert(
-        "Please fill in title, date, paragraph for all sections, and writer's name on the first section."
-      );
-      return;
+      if (isMounted) {
+        setExistingNewsletters([newNewsletter, ...existingNewsletters]);
+        setPdfFile(null);
+        setPublishDialogOpen(false);
+        
+        setSnackbar({
+          open: true,
+          message: "Newsletter published successfully!",
+          severity: "success",
+        });
+      }
+    } catch (err) {
+      if (isMounted) {
+        setSnackbar({
+          open: true,
+          message: "Failed to publish newsletter",
+          severity: "error",
+        });
+        console.error("Publish error:", err);
+      }
+    } finally {
+      if (isMounted) {
+        setLoading(false);
+      }
     }
-
-    // Here you would typically make an API call to publish the newsletter
-    console.log("Publishing with options:", publishOptions);
-    alert("Newsletter published successfully!");
-    setPublishDialogOpen(false);
   };
+
+  const handleDelete = async (id) => {
+    try {
+      setLoading(true);
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 800));
+      
+      if (isMounted) {
+        setExistingNewsletters(existingNewsletters.filter(nl => nl.id !== id));
+        setSnackbar({
+          open: true,
+          message: "Newsletter deleted successfully",
+          severity: "success",
+        });
+      }
+    // eslint-disable-next-line no-unused-vars
+    } catch (err) {
+      if (isMounted) {
+        setSnackbar({
+          open: true,
+          message: "Failed to delete newsletter",
+          severity: "error",
+        });
+      }
+    } finally {
+      if (isMounted) {
+        setLoading(false);
+      }
+    }
+  };
+
+  const handleCloseSnackbar = () => {
+    setSnackbar({ ...snackbar, open: false });
+  };
+
+  if (!isMounted) {
+    return null; // Or a loading spinner
+  }
 
   return (
-    <Box sx={{ p: 4 }}>
+    <Box sx={{ p: 4, position: "relative" }}>
+      {/* Loading overlay */}
+      <Backdrop
+        sx={{ color: "#fff", zIndex: (theme) => theme.zIndex.drawer + 1 }}
+        open={loading && existingNewsletters.length === 0}
+      >
+        <CircularProgress color="inherit" />
+      </Backdrop>
+
       <Typography
         variant="h4"
         sx={{ mb: 2, fontWeight: "bold", color: "#fea434" }}
       >
-        News & Events Management
+        Newsletter Management
       </Typography>
 
-      <Card
-        sx={{
-          p: 3,
-          mb: 4,
-          backgroundColor: "#fff8f0",
-          borderRadius: 3,
-          boxShadow: 3,
-        }}
-      >
+      {/* Upload Section */}
+      <Card sx={{ p: 3, mb: 4, boxShadow: 3 }}>
         <CardContent>
-          <FormControl fullWidth sx={{ mb: 3 }}>
-            <InputLabel>Choose Template</InputLabel>
-            <Select
-              value={templateIndex}
-              label="Choose Template"
-              onChange={(e) => {
-                setTemplateIndex(e.target.value);
-                setPreviewing(false);
+          <Typography variant="h6" gutterBottom>
+            Upload New Newsletter
+          </Typography>
+
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 3 }}>
+            <Button
+              variant="contained"
+              component="label"
+              startIcon={<CloudUpload />}
+              disabled={loading}
+              sx={{
+                backgroundColor: "#fea434",
+                "&:hover": { backgroundColor: "#e69420" },
               }}
             >
-              {newsletterTemplates.map((_, idx) => (
-                <MenuItem key={idx} value={idx}>
-                  Template {idx + 1}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-
-          <Box sx={{ mb: 3 }}>
-            <Button
-              variant="outlined"
-              component="label"
-              startIcon={<PictureAsPdf />}
-              sx={{ color: "#fea434", borderColor: "#fea434" }}
-            >
-              Upload PDF Version
+              Select PDF
               <input
                 type="file"
                 hidden
                 accept="application/pdf"
                 onChange={handlePdfUpload}
+                disabled={loading}
               />
             </Button>
-            {pdfFile && (
-              <Box sx={{ mt: 2, display: "flex", alignItems: "center" }}>
-                <Typography variant="body2" sx={{ mr: 2 }}>
-                  {pdfFile.name}
-                </Typography>
-                <IconButton
-                  size="small"
-                  color="error"
+
+            {pdfFile ? (
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <Chip
+                  label={pdfFile.name}
+                  onDelete={() => !loading && setPdfFile(null)}
+                  deleteIcon={<Delete />}
+                  variant="outlined"
+                />
+                <Button
+                  variant="outlined"
                   onClick={() => setPdfFile(null)}
+                  size="small"
+                  disabled={loading}
                 >
-                  <Delete fontSize="small" />
-                </IconButton>
+                  Change
+                </Button>
               </Box>
+            ) : (
+              <Typography variant="body2" color="text.secondary">
+                {loading ? "Processing..." : "No file selected"}
+              </Typography>
             )}
           </Box>
 
           {pdfFile && (
-            <Box sx={{ mb: 3, border: "1px solid #ddd", p: 2, borderRadius: 1 }}>
-              <Typography variant="h6" sx={{ mb: 1 }}>
-                PDF Preview
-              </Typography>
-              <Box sx={{ maxHeight: 300, overflow: "auto" }}>
-                <Document
-                  file={pdfFile}
-                  onLoadSuccess={onDocumentLoadSuccess}
-                  loading={<Typography>Loading PDF...</Typography>}
-                >
-                  {Array.from(new Array(numPages), (el, index) => (
+            <>
+              <Box sx={{ mb: 3, border: "1px solid #eee", p: 2, borderRadius: 1 }}>
+                <Typography variant="subtitle1" gutterBottom>
+                  PDF Preview (First Page)
+                </Typography>
+                <Box sx={{ maxHeight: 300, overflow: "auto" }}>
+                  <Document
+                    file={pdfFile}
+                    onLoadSuccess={onDocumentLoadSuccess}
+                    loading={
+                      <Box sx={{ display: "flex", justifyContent: "center", p: 2 }}>
+                        <CircularProgress size={24} />
+                      </Box>
+                    }
+                    error={
+                      <Alert severity="error">Failed to load PDF preview</Alert>
+                    }
+                  >
                     <Page
-                      key={`page_${index + 1}`}
-                      pageNumber={index + 1}
+                      pageNumber={1}
                       width={300}
                       renderTextLayer={false}
                       renderAnnotationLayer={false}
                     />
-                  ))}
-                </Document>
+                  </Document>
+                </Box>
               </Box>
-            </Box>
-          )}
 
-          {newsletterTemplates[templateIndex].map((section, secIdx) => (
-            <Card
-              key={secIdx}
-              sx={{ mb: 3, p: 2, backgroundColor: "#fff", position: "relative" }}
-            >
-              <Typography variant="h6" sx={{ color: "#fea434" }}>
-                Section {secIdx + 1}
-              </Typography>
-
-              <TextField
-                label="Title"
-                value={section.title}
-                onChange={(e) =>
-                  handleSectionChange(secIdx, "title", e.target.value)
-                }
-                fullWidth
-                sx={{ mt: 2 }}
-              />
-
-              {secIdx === 0 && (
-                <TextField
-                  label="Editor's Name"
-                  value={section.writerName}
-                  onChange={(e) =>
-                    handleSectionChange(secIdx, "writerName", e.target.value)
-                  }
-                  fullWidth
-                  sx={{ mt: 2 }}
-                />
-              )}
-
-              <TextField
-                label="Date"
-                type="date"
-                InputLabelProps={{ shrink: true }}
-                value={section.date}
-                onChange={(e) =>
-                  handleSectionChange(secIdx, "date", e.target.value)
-                }
-                fullWidth
-                sx={{ mt: 2 }}
-              />
-
-              <TextField
-                label="Paragraph"
-                multiline
-                rows={4}
-                value={section.paragraph}
-                onChange={(e) =>
-                  handleSectionChange(secIdx, "paragraph", e.target.value)
-                }
-                fullWidth
-                sx={{ mt: 2 }}
-              />
-
-              <FormControl fullWidth sx={{ mt: 2 }}>
-                <InputLabel>Paragraph Alignment</InputLabel>
-                <Select
-                  value={section.paragraphAlign}
-                  label="Paragraph Alignment"
-                  onChange={(e) =>
-                    handleSectionChange(secIdx, "paragraphAlign", e.target.value)
-                  }
-                >
-                  <MenuItem value="left">Left</MenuItem>
-                  <MenuItem value="center">Center</MenuItem>
-                  <MenuItem value="right">Right</MenuItem>
-                </Select>
-              </FormControl>
-
-              <Box sx={{ mt: 2 }}>
+              <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
                 <Button
-                  variant="outlined"
-                  component="label"
-                  startIcon={<ImageIcon />}
-                  sx={{ color: "#fea434", borderColor: "#fea434" }}
+                  variant="contained"
+                  onClick={() => setPublishDialogOpen(true)}
+                  startIcon={<Publish />}
+                  disabled={loading}
+                  sx={{
+                    backgroundColor: "#4caf50",
+                    "&:hover": { backgroundColor: "#388e3c" },
+                  }}
                 >
-                  Upload Image
-                  <input
-                    type="file"
-                    hidden
-                    accept="image/*"
-                    onChange={(e) => addImageToSection(e, secIdx)}
-                  />
+                  Publish Newsletter
                 </Button>
               </Box>
-
-              {section.images.length > 0 && (
-                <>
-                  <FormControl fullWidth sx={{ mt: 2 }}>
-                    <InputLabel>Image Alignment</InputLabel>
-                    <Select
-                      value={section.imageAlign}
-                      label="Image Alignment"
-                      onChange={(e) =>
-                        handleSectionChange(secIdx, "imageAlign", e.target.value)
-                      }
-                    >
-                      <MenuItem value="left">Left</MenuItem>
-                      <MenuItem value="center">Center</MenuItem>
-                      <MenuItem value="right">Right</MenuItem>
-                    </Select>
-                  </FormControl>
-
-                  <Box
-                    sx={{
-                      display: "flex",
-                      gap: 2,
-                      mt: 2,
-                      flexWrap: "wrap",
-                      alignItems: "center",
-                    }}
-                  >
-                    {section.images.map((img, imgIdx) => (
-                      <Box key={imgIdx} sx={{ position: "relative" }}>
-                        <img
-                          src={img.url}
-                          alt={`Section ${secIdx + 1} image ${imgIdx + 1}`}
-                          style={{
-                            width: 120,
-                            height: 80,
-                            objectFit: "cover",
-                            borderRadius: 6,
-                            boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
-                          }}
-                        />
-                        <IconButton
-                          size="small"
-                          color="error"
-                          onClick={() => removeImageFromSection(secIdx, imgIdx)}
-                          sx={{
-                            position: "absolute",
-                            top: -8,
-                            right: -8,
-                            backgroundColor: "white",
-                          }}
-                        >
-                          <Delete fontSize="small" />
-                        </IconButton>
-                      </Box>
-                    ))}
-                  </Box>
-                </>
-              )}
-
-              <Button
-                onClick={() => removeSection(secIdx)}
-                color="error"
-                variant="outlined"
-                startIcon={<Delete />}
-                sx={{ mt: 2 }}
-                disabled={newsletterTemplates[templateIndex].length === 1}
-              >
-                Remove Section
-              </Button>
-            </Card>
-          ))}
-
-          <Button
-            onClick={addSection}
-            variant="contained"
-            startIcon={<Add />}
-            sx={{ bgcolor: "#fea434", mt: 2 }}
-          >
-            Add New Section
-          </Button>
-
-          <Box sx={{ mt: 4, display: "flex", gap: 2, flexWrap: "wrap" }}>
-            <Button
-              variant="contained"
-              sx={{ bgcolor: "#fea434" }}
-              onClick={() => {
-                if (!validateTemplate()) {
-                  alert(
-                    "Please fill in title, date, paragraph for all sections, and writer's name on the first section."
-                  );
-                  return;
-                }
-                setPreviewing(true);
-              }}
-              startIcon={<Preview />}
-            >
-              Preview Newsletter
-            </Button>
-            <Button
-              variant="outlined"
-              color="error"
-              onClick={() => setPreviewing(false)}
-              startIcon={<Cancel />}
-              disabled={!previewing}
-            >
-              Cancel Preview
-            </Button>
-            <Button
-              variant="contained"
-              color="success"
-              onClick={() => setPublishDialogOpen(true)}
-              startIcon={<Publish />}
-              sx={{ ml: "auto" }}
-            >
-              Publish Newsletter
-            </Button>
-          </Box>
+            </>
+          )}
         </CardContent>
       </Card>
 
-      {previewing && (
-        <Card
-          sx={{
-            mt: 4,
-            p: 3,
-            backgroundColor: "#fff",
-            border: "1px solid #ffe2c0",
-            borderRadius: 3,
-            boxShadow: 1,
-            maxWidth: 900,
-            margin: "auto",
-          }}
-        >
-          <Box
-            sx={{
-              borderBottom: "2px solid #fea434",
-              mb: 4,
-              textAlign: "center",
-              py: 1,
-            }}
-          >
-            <Box
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 2,
-                flexWrap: "wrap",
-                mb: 1,
-              }}
+      {/* Existing Newsletters Section */}
+      <Card sx={{ p: 3, boxShadow: 3 }}>
+        <CardContent>
+          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3 }}>
+            <Typography variant="h6">Published Newsletters</Typography>
+            <Button
+              variant="outlined"
+              startIcon={<Refresh />}
+              onClick={() => window.location.reload()}
+              disabled={loading}
             >
-              <img
-                src={jumpstartLogo}
-                alt="Jumpstart Logo"
-                style={{ height: 60, objectFit: "contain" }}
-              />
-              <Typography
-                variant="h3"
-                component="h1"
-                sx={{
-                  fontWeight: "bold",
-                  color: "#d35400",
-                  letterSpacing: 4,
-                  textAlign: "center",
-                }}
-              >
-                JUMPSTART NEWSLETTER
-              </Typography>
-            </Box>
-            <Typography
-              variant="subtitle2"
-              sx={{ fontStyle: "italic", color: "#555", mt: 0.5 }}
-            >
-              {new Date().toLocaleDateString("en-ZA", {
-                weekday: "long",
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-              })}
-            </Typography>
+              Refresh
+            </Button>
           </Box>
 
-          {newsletterTemplates[templateIndex].map((section, idx) => (
-            <Box
-              key={idx}
-              mb={6}
-              sx={{
-                borderBottom:
-                  idx !== newsletterTemplates[templateIndex].length - 1
-                    ? "1px solid #eee"
-                    : "none",
-                pb: 3,
-              }}
-            >
-              <Typography
-                variant="h4"
-                sx={{
-                  fontWeight: "900",
-                  textTransform: "uppercase",
-                  mb: 1,
-                  color: "#d35400",
-                  letterSpacing: 2,
-                }}
+          {error ? (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {error}
+              <Button 
+                onClick={() => window.location.reload()} 
+                color="inherit"
+                size="small"
+                sx={{ ml: 1 }}
               >
-                {section.title}
-              </Typography>
+                Retry
+              </Button>
+            </Alert>
+          ) : null}
 
-              {idx === 0 && section.writerName && (
-                <Typography
-                  variant="subtitle1"
-                  sx={{
-                    fontWeight: "bold",
-                    fontStyle: "italic",
-                    color: "#444",
-                    mb: 1,
-                  }}
-                >
-                  By {section.writerName}
-                </Typography>
-              )}
-
-              <Typography
-                variant="subtitle2"
-                sx={{ fontStyle: "italic", color: "#666", mb: 2 }}
-              >
-                {section.date
-                  ? new Date(section.date).toLocaleDateString("en-ZA", {
-                      weekday: "long",
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                    })
-                  : ""}
-              </Typography>
-
-              {section.images.length > 0 ? (
-                <Box
-                  sx={{
-                    display:
-                      section.imageAlign === "center" ? "block" : "flex",
-                    flexDirection:
-                      section.imageAlign === "left" ? "row-reverse" : "row",
-                    alignItems: "flex-start",
-                    gap: 2,
-                  }}
-                >
-                  {section.imageAlign === "center" && (
-                    <Box
-                      sx={{
-                        display: "flex",
-                        justifyContent: "center",
-                        mb: 2,
-                        gap: 1,
-                        flexWrap: "wrap",
-                      }}
-                    >
-                      {section.images.map((img, i) => (
-                        <img
-                          key={i}
-                          src={img.url}
-                          alt={`Section image ${i + 1}`}
-                          style={{
-                            width: "100%",
-                            maxWidth: 400,
-                            borderRadius: 8,
-                            objectFit: "cover",
-                            boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-                          }}
-                        />
-                      ))}
-                    </Box>
-                  )}
-
-                  <Box
-                    sx={{
-                      flex: 1,
-                      fontSize: "1.1rem",
-                      lineHeight: 1.6,
-                      fontStyle: "italic",
-                      textAlign: section.paragraphAlign || "left",
-                    }}
-                  >
-                    {section.paragraph}
-                  </Box>
-
-                  {section.imageAlign !== "center" && (
-                    <Box
-                      sx={{
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: 1,
-                        maxWidth: 250,
-                        flexShrink: 0,
-                      }}
-                    >
-                      {section.images.map((img, i) => (
-                        <img
-                          key={i}
-                          src={img.url}
-                          alt={`Section image ${i + 1}`}
-                          style={{
-                            width: "100%",
-                            borderRadius: 8,
-                            objectFit: "cover",
-                            boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-                          }}
-                        />
-                      ))}
-                    </Box>
-                  )}
-                </Box>
-              ) : (
-                <Box
-                  sx={{
-                    fontSize: "1.1rem",
-                    lineHeight: 1.6,
-                    fontStyle: "italic",
-                    textAlign: section.paragraphAlign || "left",
-                  }}
-                >
-                  {section.paragraph}
-                </Box>
-              )}
+          {loading && existingNewsletters.length === 0 ? (
+            <Box sx={{ display: "flex", justifyContent: "center", p: 4 }}>
+              <CircularProgress />
             </Box>
-          ))}
-        </Card>
-      )}
+          ) : existingNewsletters.length === 0 ? (
+            <Typography variant="body1" color="text.secondary" sx={{ textAlign: "center", p: 4 }}>
+              No newsletters found. Upload one to get started.
+            </Typography>
+          ) : (
+            <Box sx={{ maxHeight: 500, overflow: "auto" }}>
+              {existingNewsletters.map((newsletter) => (
+                <Box
+                  key={newsletter.id}
+                  sx={{
+                    p: 2,
+                    mb: 2,
+                    border: "1px solid #eee",
+                    borderRadius: 1,
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    "&:hover": { backgroundColor: "#fff8f0" },
+                  }}
+                >
+                  <Box sx={{ overflow: "hidden" }}>
+                    <Typography 
+                      variant="subtitle1" 
+                      fontWeight="bold"
+                      noWrap
+                      sx={{ maxWidth: "300px", textOverflow: "ellipsis" }}
+                    >
+                      {newsletter.title}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      Published: {new Date(newsletter.publishDate).toLocaleDateString()}
+                    </Typography>
+                    {newsletter.isPublished ? (
+                      <Chip
+                        label="Published"
+                        color="success"
+                        size="small"
+                        sx={{ ml: 1 }}
+                      />
+                    ) : (
+                      <Chip
+                        label="Draft"
+                        color="warning"
+                        size="small"
+                        sx={{ ml: 1 }}
+                      />
+                    )}
+                  </Box>
+                  <Box>
+                    <Button
+                      variant="outlined"
+                      href={newsletter.fileUrl}
+                      download
+                      target="_blank"
+                      size="small"
+                      startIcon={<PictureAsPdf />}
+                      sx={{ mr: 1 }}
+                      disabled={loading}
+                    >
+                      Download
+                    </Button>
+                    <IconButton
+                      color="error"
+                      onClick={() => handleDelete(newsletter.id)}
+                      disabled={loading}
+                    >
+                      <Delete />
+                    </IconButton>
+                  </Box>
+                </Box>
+              ))}
+            </Box>
+          )}
+        </CardContent>
+      </Card>
 
+      {/* Publish Dialog */}
       <Dialog
         open={publishDialogOpen}
-        onClose={() => setPublishDialogOpen(false)}
+        onClose={() => !loading && setPublishDialogOpen(false)}
+        fullWidth
+        maxWidth="sm"
       >
         <DialogTitle>Publish Newsletter</DialogTitle>
         <DialogContent>
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={publishOptions.publishContent}
-                  onChange={(e) =>
-                    setPublishOptions({
-                      ...publishOptions,
-                      publishContent: e.target.checked,
-                    })
-                  }
-                />
-              }
-              label="Publish Content (HTML)"
-            />
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={publishOptions.publishPdf}
-                  onChange={(e) =>
-                    setPublishOptions({
-                      ...publishOptions,
-                      publishPdf: e.target.checked,
-                    })
-                  }
-                />
-              }
-              label="Publish PDF Version"
-            />
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={publishOptions.sendEmail}
-                  onChange={(e) =>
-                    setPublishOptions({
-                      ...publishOptions,
-                      sendEmail: e.target.checked,
-                    })
-                  }
-                />
-              }
-              label="Send Email Notification to Subscribers"
-            />
-          </Box>
+          <Typography variant="body1" gutterBottom>
+            You are about to publish: <strong>{pdfFile?.name}</strong>
+          </Typography>
+          
+          <Divider sx={{ my: 2 }} />
+          
+          <FormControlLabel
+            control={
+              <Switch
+                checked={publishOptions.isPublished}
+                onChange={(e) =>
+                  setPublishOptions({
+                    ...publishOptions,
+                    isPublished: e.target.checked,
+                  })
+                }
+                disabled={loading}
+              />
+            }
+            label="Make newsletter publicly available"
+            sx={{ mb: 1 }}
+          />
+          
+          <FormControlLabel
+            control={
+              <Switch
+                checked={publishOptions.notifySubscribers}
+                onChange={(e) =>
+                  setPublishOptions({
+                    ...publishOptions,
+                    notifySubscribers: e.target.checked,
+                  })
+                }
+                disabled={loading}
+              />
+            }
+            label="Notify subscribers via email"
+          />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setPublishDialogOpen(false)}>Cancel</Button>
+          <Button
+            onClick={() => setPublishDialogOpen(false)}
+            disabled={loading}
+          >
+            Cancel
+          </Button>
           <Button
             onClick={handlePublish}
             variant="contained"
             color="success"
-            startIcon={<Publish />}
+            startIcon={loading ? <CircularProgress size={20} /> : <Publish />}
+            disabled={loading}
           >
-            Publish
+            {loading ? "Publishing..." : "Publish"}
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Snackbar for notifications */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+      >
+        <Alert
+          onClose={handleCloseSnackbar}
+          severity={snackbar.severity}
+          sx={{ width: "100%" }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

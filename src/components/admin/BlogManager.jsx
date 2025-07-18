@@ -6,12 +6,13 @@ import {
   Button,
   Card,
   CardContent,
-  IconButton,
   Divider,
 } from "@mui/material";
 import { Delete, Edit, Image as ImageIcon, Preview, Cancel } from "@mui/icons-material";
 
+// Main Component: Blog + Newsletter Upload
 const BlogManagement = () => {
+  // Blog States
   const [blogs, setBlogs] = useState([]);
   const [newBlog, setNewBlog] = useState({
     title: "",
@@ -22,6 +23,13 @@ const BlogManagement = () => {
   const [previewing, setPreviewing] = useState(false);
   const [editingId, setEditingId] = useState(null);
 
+  // Newsletter Upload States
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [pdfFile, setPdfFile] = useState(null);
+  const [message, setMessage] = useState("");
+
+  // Blog Handlers
   const handleInputChange = (e) => {
     setNewBlog({ ...newBlog, [e.target.name]: e.target.value });
   };
@@ -49,10 +57,7 @@ const BlogManagement = () => {
       );
       setBlogs(updatedBlogs);
     } else {
-      const blogToAdd = {
-        ...newBlog,
-        id: Date.now(),
-      };
+      const blogToAdd = { ...newBlog, id: Date.now() };
       setBlogs([blogToAdd, ...blogs]);
     }
 
@@ -74,6 +79,49 @@ const BlogManagement = () => {
     setNewBlog({ title: "", content: "", image: null, imageUrl: "" });
     setPreviewing(false);
     setEditingId(null);
+  };
+
+  // Newsletter Upload Handlers
+  const handleFileChange = (e) => {
+    setPdfFile(e.target.files[0]);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!pdfFile) {
+      setMessage("Please select a PDF file to upload.");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("title", title);
+    formData.append("description", description);
+    formData.append("pdf", pdfFile);
+
+    try {
+      const response = await fetch("http://localhost:4000/api/newsletters", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        setMessage("Upload failed: " + errorData.error);
+        return;
+      }
+
+      const data = await response.json();
+      setMessage("Upload successful! Newsletter ID: " + data._id);
+
+      // Reset form
+      setTitle("");
+      setDescription("");
+      setPdfFile(null);
+      e.target.reset();
+    } catch (err) {
+      setMessage("Error uploading file: " + err.message);
+    }
   };
 
   return (
@@ -145,30 +193,16 @@ const BlogManagement = () => {
 
       {/* Preview Panel */}
       {previewing && newBlog.title && newBlog.content && newBlog.imageUrl && (
-        <Card
-          sx={{
-            mb: 4,
-            backgroundColor: "#fff",
-            border: "1px solid #ffe2c0",
-            borderRadius: 3,
-            boxShadow: 1,
-          }}
-        >
+        <Card sx={{ mb: 4, backgroundColor: "#fff", border: "1px solid #ffe2c0", borderRadius: 3, boxShadow: 1 }}>
           <CardContent>
-            <Typography variant="h5" color="#fea434" mb={2}>
-              Preview
-            </Typography>
+            <Typography variant="h5" color="#fea434" mb={2}>Preview</Typography>
             <Typography variant="h6">{newBlog.title}</Typography>
-            <Typography variant="body2" mb={2}>
-              {newBlog.content}
-            </Typography>
-            {newBlog.imageUrl && (
-              <img
-                src={newBlog.imageUrl}
-                alt="Preview"
-                style={{ width: "100%", maxHeight: 200, objectFit: "cover", borderRadius: 8 }}
-              />
-            )}
+            <Typography variant="body2" mb={2}>{newBlog.content}</Typography>
+            <img
+              src={newBlog.imageUrl}
+              alt="Preview"
+              style={{ width: "100%", maxHeight: 200, objectFit: "cover", borderRadius: 8 }}
+            />
           </CardContent>
         </Card>
       )}
@@ -182,17 +216,10 @@ const BlogManagement = () => {
         <Typography>No blog posts yet.</Typography>
       ) : (
         blogs.map((blog) => (
-          <Card
-            key={blog.id}
-            sx={{ mb: 3, backgroundColor: "#fff", borderRadius: 3, boxShadow: 1 }}
-          >
+          <Card key={blog.id} sx={{ mb: 3, backgroundColor: "#fff", borderRadius: 3, boxShadow: 1 }}>
             <CardContent>
-              <Typography variant="h6" color="primary">
-                {blog.title}
-              </Typography>
-              <Typography variant="body2" mb={2}>
-                {blog.content}
-              </Typography>
+              <Typography variant="h6" color="primary">{blog.title}</Typography>
+              <Typography variant="body2" mb={2}>{blog.content}</Typography>
               {blog.imageUrl && (
                 <img
                   src={blog.imageUrl}
@@ -223,6 +250,42 @@ const BlogManagement = () => {
           </Card>
         ))
       )}
+
+      {/* Newsletter Upload Section */}
+      <Box mt={6}>
+        <Typography variant="h4" sx={{ mb: 2, fontWeight: "bold", color: "#fea434" }}>
+          Upload Newsletter PDF
+        </Typography>
+        <form onSubmit={handleSubmit} style={{ maxWidth: 500 }}>
+          <TextField
+            label="Newsletter Title"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            fullWidth
+            required
+            sx={{ mb: 2 }}
+          />
+          <TextField
+            label="Description"
+            multiline
+            rows={4}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            fullWidth
+            sx={{ mb: 2 }}
+          />
+          <input
+            type="file"
+            accept="application/pdf"
+            onChange={handleFileChange}
+            required
+          />
+          <Button type="submit" variant="contained" sx={{ mt: 2, bgcolor: "#fea434" }}>
+            Upload PDF
+          </Button>
+          {message && <Typography sx={{ mt: 2 }}>{message}</Typography>}
+        </form>
+      </Box>
     </Box>
   );
 };

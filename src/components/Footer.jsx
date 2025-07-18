@@ -26,7 +26,7 @@ const Footer = () => {
         <Box className="flex flex-col space-y-2 text-sm">
           <Box className="flex items-center gap-2">
             <Phone fontSize="small" sx={{ color: "#fea434" }} />
-            <Typography variant="body2">065 808 9062</Typography>
+            <Typography variant="body2">+27 63 964 7736</Typography>
           </Box>
           <Box className="flex items-center gap-2">
             <Email fontSize="small" sx={{ color: "#fea434" }} />
