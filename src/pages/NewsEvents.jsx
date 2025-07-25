@@ -13,6 +13,7 @@ import {
 import Footer from "../components/Footer";
 import axios from "axios";
 import AOS from "aos";
+import DownloadIcon from "@mui/icons-material/Download";
 import "aos/dist/aos.css";
 
 const modalStyle = {
@@ -85,7 +86,7 @@ const NewsEvents = () => {
         </Container>
       </Box>
 
-      {/* Newsletter List - Vertical Format */}
+      {/* Newsletter List */}
       <Container maxWidth="md" sx={{ py: 6 }}>
         {loading ? (
           <Box display="flex" justifyContent="center" mt={6}>
@@ -136,7 +137,8 @@ const NewsEvents = () => {
                     {newsletter.author?.[0] || "A"}
                   </Avatar>
                   <Typography variant="caption">
-                    {newsletter.author || "Admin"} • {new Date(newsletter.createdAt).toLocaleDateString()}
+                    {newsletter.author || "Admin"} •{" "}
+                    {new Date(newsletter.createdAt).toLocaleDateString()}
                   </Typography>
                 </Box>
 
@@ -150,7 +152,8 @@ const NewsEvents = () => {
                   </Button>
                   <Button
                     variant="outlined"
-                    href={`http://localhost:4000/${newsletter.pdf}`}
+                    startIcon={<DownloadIcon />}
+                    href={`http://localhost:4000/uploads/${newsletter.pdf}`}
                     download
                     sx={{ borderColor: "#ffa333", color: "#ffa333" }}
                   >
@@ -182,22 +185,43 @@ const NewsEvents = () => {
             {selectedNewsletter?.title}
           </Typography>
           <Typography variant="body2" color="textSecondary" mb={1}>
-            By {selectedNewsletter?.author || "Admin"} • {new Date(selectedNewsletter?.createdAt).toLocaleDateString()}
+            By {selectedNewsletter?.author || "Admin"} •{" "}
+            {new Date(selectedNewsletter?.createdAt).toLocaleDateString()}
           </Typography>
-          <Typography variant="body1" mb={4}>
+          <Typography variant="body1" mb={2}>
             {selectedNewsletter?.description}
           </Typography>
-          <Button
-            variant="contained"
-            href={`http://localhost:4000/${selectedNewsletter?.pdf}`}
-            download
-            sx={{ backgroundColor: "#ffa333", color: "white", mr: 2 }}
-          >
-            Download PDF
-          </Button>
-          <Button onClick={handleClose} variant="outlined" sx={{ borderColor: "#ffa333", color: "#ffa333" }}>
-            Close
-          </Button>
+
+          {/* PDF Preview */}
+          {selectedNewsletter?.pdf && (
+            <iframe
+              src={`http://localhost:4000/uploads/${selectedNewsletter?.pdf}`}
+              title="Newsletter PDF"
+              width="100%"
+              height="500px"
+              style={{ border: "1px solid #ccc", borderRadius: 8, marginBottom: 16 }}
+            />
+          )}
+
+          {/* Action Buttons */}
+          <Box display="flex" justifyContent="flex-start" gap={2}>
+            <Button
+              variant="contained"
+              startIcon={<DownloadIcon />}
+              href={`http://localhost:4000/uploads/${selectedNewsletter?.pdf}`}
+              download
+              sx={{ backgroundColor: "#ffa333", color: "white" }}
+            >
+              Download PDF
+            </Button>
+            <Button
+              onClick={handleClose}
+              variant="outlined"
+              sx={{ borderColor: "#ffa333", color: "#ffa333" }}
+            >
+              Close
+            </Button>
+          </Box>
         </Box>
       </Modal>
 
