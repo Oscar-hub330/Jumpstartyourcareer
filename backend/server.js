@@ -6,6 +6,7 @@ import fs from "fs";
 import { fileURLToPath } from "url";
 import subscriberRoutes from "./routes/subscribers.js";
 import newsletterRoutes from "./routes/newsletterRoutes.js"; // ✅ NEW
+import blogRoutes from "./routes/blogRoutes.js";
 
 const app = express();
 app.use(cors());
@@ -41,11 +42,10 @@ mongoose.connect(
 // Routes
 app.use("/api/subscribe", subscriberRoutes);
 app.use("/api/newsletters", newsletterRoutes); // ✅ NEW
-
+app.use("/api/blogs", blogRoutes);
 // Serve uploaded PDFs statically
 app.use("/uploads", express.static(path.join(__dirname, "uploads"))); // ✅ NEW
-
 // Port
 // eslint-disable-next-line no-undef
 const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+app.listen(PORT, () => console.log(` Server running on port ${PORT}`));

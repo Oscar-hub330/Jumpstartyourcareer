@@ -18,6 +18,7 @@ const Testimonials = lazy(() => import("./pages/Testimonials"));
 const AdminLogin = lazy(() => import("./pages/AdminLogin"));
 const AdminPanel = lazy(() => import("./pages/AdminPanel"));
 const ImageCarousel = lazy(() => import("./components/ImageCarousel"));
+import BlogDetail from "./pages/BlogDetail";
 
 function App() {
   const [showSplash, setShowSplash] = useState(true);
@@ -44,6 +45,8 @@ function App() {
           <Route path="/carousel" element={<ImageCarousel />} />
           <Route path="/testimonials" element={<Testimonials />} />
           <Route path="/admin-login" element={<AdminLogin />} />
+          <Route path="/blog/:id" element={<BlogDetail />} />
+          
           <Route
             path="/admin"
             element={

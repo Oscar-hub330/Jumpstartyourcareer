@@ -9,20 +9,20 @@ import {
   CardMedia,
 } from "@mui/material";
 
-import PhelepheImg from "../assets/Phelephe.png";
-import CeliweImg from "../assets/celiwe.jpeg";
-import FortunateImg from "../assets/fortunate.jpeg";
-import GoodnessImg from "../assets/goodness.jpeg";
-import HlanyisekaImg from "../assets/hlayiseka.jpeg";
-import InnocentImg from "../assets/innocent.jpeg";
-import lesediImg from "../assets/lesedi.jpeg";
-import MxolisiImg from "../assets/mxolisi.jpeg";
-import NondumisoHRImg from "../assets/nondumisoHR.jpeg";
-import NokuthulamImg from "../assets/nokuthulaM.jpeg";
-import OscarImg from "../assets/oscar.jpeg";
-import TshepisoImg from "../assets/tshepiso.jpeg";
-import WandileImg from "../assets/wandile.jpeg";
-import BongiweImg from "../assets/bongiwe.jpeg";
+import PhelepheImg from "../assets/Phelephe.jpg";
+import CeliweImg from "../assets/celiwe.jpg";
+import FortunateImg from "../assets/fortunate.jpg";
+import GoodnessImg from "../assets/goodness.jpg";
+import HlanyisekaImg from "../assets/hlayiseka.jpg";
+import InnocentImg from "../assets/innocent.jpg";
+import lesediImg from "../assets/lesedi.jpg";
+import MxolisiImg from "../assets/mxolisi.jpg";
+import NondumisoHRImg from "../assets/nondumisoHR.jpg";
+import NokuthulamImg from "../assets/nokuthulaM.jpg";
+import OscarImg from "../assets/oscar.jpg";
+import TshepisoImg from "../assets/tshepiso.jpg";
+import WandileImg from "../assets/wandile.jpg";
+import BongiweImg from "../assets/bongiwe.jpg";
 
 const leadership = [
   {
@@ -90,7 +90,7 @@ const departments = [
     members: [
       {
         name: "Celiwe",
-        surname: "Wadi",
+        surname: "Wati",
         position: "Marketing Coordinator",
         image: CeliweImg,
       },

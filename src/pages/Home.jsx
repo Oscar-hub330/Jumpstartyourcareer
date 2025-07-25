@@ -16,7 +16,6 @@ import PropTypes from "prop-types";
 const ImageCarousel = lazy(() => import("../components/ImageCarousel"));
 
 const generateSuccessStories = (count = 6) => {
-  // ... your existing success story generator code ...
   const locations = ["Limpopo", "Mpumalanga", "KwaZulu-Natal", "Free State"];
   const names = ["Thabo", "Nomsa", "Sipho", "Lerato", "Mpho", "Bongani"];
   const businessTypes = ["tech startup", "agricultural business", "online store"];

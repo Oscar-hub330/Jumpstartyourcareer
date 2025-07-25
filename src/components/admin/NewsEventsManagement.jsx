@@ -1,537 +1,361 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
-  Box,
+  Container,
   Typography,
-  Button,
   Card,
   CardContent,
-  IconButton,
+  Button,
+  Modal,
+  Box,
   CircularProgress,
-  Alert,
-  Snackbar,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  FormControlLabel,
-  Switch,
-  Divider,
-  Chip,
-  Backdrop,
+  Avatar,
+  TextField,
+  Stack,
+  IconButton,
 } from "@mui/material";
-import {
-  Delete,
-  Publish,
-  PictureAsPdf,
-  CloudUpload,
-  Refresh,
-} from "@mui/icons-material";
-import { Document, Page } from "react-pdf";
-import { pdfjs } from "react-pdf";
+import CloseIcon from "@mui/icons-material/Close";
+import axios from "axios";
 
-// Initialize PDF.js worker
-pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+const modalStyle = {
+  position: "absolute",
+  top: "50%",
+  left: "50%",
+  transform: "translate(-50%, -50%)",
+  bgcolor: "background.paper",
+  borderRadius: 2,
+  boxShadow: 24,
+  p: 4,
+  maxWidth: 700,
+  width: "90%",
+  outline: "none",
+  maxHeight: "90vh",
+  overflowY: "auto",
+};
 
 const NewsEventsManagement = () => {
-  const [pdfFile, setPdfFile] = useState(null);
-  const [publishDialogOpen, setPublishDialogOpen] = useState(false);
-  const [publishOptions, setPublishOptions] = useState({
-    isPublished: true,
-    notifySubscribers: true,
-  });
+  const [newsletters, setNewsletters] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [snackbar, setSnackbar] = useState({
-    open: false,
-    message: "",
-    severity: "info",
-  });
-  const [existingNewsletters, setExistingNewsletters] = useState([]);
-  const [isMounted, setIsMounted] = useState(false);
 
-  // Set mounted state to prevent memory leaks
+  // Modal & form state
+  const [openModal, setOpenModal] = useState(false);
+  const [formData, setFormData] = useState({
+    _id: null,
+    title: "",
+    description: "",
+    author: "",
+    image: null,
+    pdf: null,
+  });
+  const [saving, setSaving] = useState(false);
+
+  // Fetch newsletters on mount
   useEffect(() => {
-    setIsMounted(true);
-    return () => setIsMounted(false);
+    fetchNewsletters();
   }, []);
 
-  // Fetch existing newsletters
-  useEffect(() => {
-    if (!isMounted) return;
-
-    const fetchNewsletters = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        
-        // Simulate API call - replace with actual fetch
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // Mock data - replace with your actual API response
-        const mockData = [
-          {
-            id: 1,
-            title: "Monthly Newsletter - June 2023",
-            fileUrl: "/sample-newsletter.pdf",
-            publishDate: new Date("2023-06-15").toISOString(),
-            isPublished: true,
-          },
-          {
-            id: 2,
-            title: "Special Edition - Spring 2023",
-            fileUrl: "/spring-newsletter.pdf",
-            publishDate: new Date("2023-03-20").toISOString(),
-            isPublished: true,
-          },
-        ];
-
-        if (isMounted) {
-          setExistingNewsletters(mockData);
-        }
-      } catch {
-        if (isMounted) {
-          setError("Failed to load newsletters. Please try again later.");
-          console.error("Fetch error");
-        }
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
-      }
-    };
-
-    fetchNewsletters();
-  }, [isMounted]);
-
-  const handlePdfUpload = (e) => {
-    try {
-      const file = e.target.files[0];
-      if (!file) return;
-
-      if (file.type !== "application/pdf") {
-        throw new Error("Please select a valid PDF file");
-      }
-
-      if (file.size > 10 * 1024 * 1024) { // 10MB limit
-        throw new Error("File size must be less than 10MB");
-      }
-
-      setPdfFile(file);
-      setError(null);
-    } catch {
-      setSnackbar({
-        open: true,
-        message: "Please select a valid PDF file",
-        severity: "error",
-      });
-      console.error("Upload error");
-    }
-  };
-
-  // eslint-disable-next-line no-unused-vars
-  const onDocumentLoadSuccess = ({ numPages }) => {
-    // PDF loaded successfully
-  };
-
-  const handlePublish = async () => {
-    if (!pdfFile) {
-      setSnackbar({
-        open: true,
-        message: "Please upload a PDF file first",
-        severity: "error",
-      });
-      return;
-    }
-
+  const fetchNewsletters = async () => {
     try {
       setLoading(true);
-      
-      // Simulate upload delay
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Create new newsletter object
-      const newNewsletter = {
-        id: Date.now(),
-        title: pdfFile.name.replace(".pdf", ""),
-        fileUrl: URL.createObjectURL(pdfFile),
-        publishDate: new Date().toISOString(),
-        isPublished: publishOptions.isPublished,
-      };
-
-      if (isMounted) {
-        setExistingNewsletters([newNewsletter, ...existingNewsletters]);
-        setPdfFile(null);
-        setPublishDialogOpen(false);
-        
-        setSnackbar({
-          open: true,
-          message: "Newsletter published successfully!",
-          severity: "success",
-        });
-      }
+      const res = await axios.get("http://localhost:4000/api/newsletters");
+      setNewsletters(res.data);
+      setError(null);
+    // eslint-disable-next-line no-unused-vars
     } catch (err) {
-      if (isMounted) {
-        setSnackbar({
-          open: true,
-          message: "Failed to publish newsletter",
-          severity: "error",
-        });
-        console.error("Publish error:", err);
-      }
+      setError("Failed to fetch newsletters");
     } finally {
-      if (isMounted) {
-        setLoading(false);
-      }
+      setLoading(false);
+    }
+  };
+
+  const openForm = (newsletter = null) => {
+    if (newsletter) {
+      setFormData({
+        _id: newsletter._id,
+        title: newsletter.title,
+        description: newsletter.description,
+        author: newsletter.author,
+        image: null,
+        pdf: null,
+      });
+    } else {
+      setFormData({
+        _id: null,
+        title: "",
+        description: "",
+        author: "",
+        image: null,
+        pdf: null,
+      });
+    }
+    setOpenModal(true);
+  };
+
+  const closeModal = () => {
+    setOpenModal(false);
+    setFormData({
+      _id: null,
+      title: "",
+      description: "",
+      author: "",
+      image: null,
+      pdf: null,
+    });
+  };
+
+  const handleInputChange = (e) => {
+    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  };
+
+  const handleFileChange = (e) => {
+    const { name, files } = e.target;
+    if (files.length > 0) {
+      setFormData((prev) => ({ ...prev, [name]: files[0] }));
     }
   };
 
   const handleDelete = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this newsletter?")) return;
     try {
-      setLoading(true);
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 800));
-      
-      if (isMounted) {
-        setExistingNewsletters(existingNewsletters.filter(nl => nl.id !== id));
-        setSnackbar({
-          open: true,
-          message: "Newsletter deleted successfully",
-          severity: "success",
-        });
-      }
+      await axios.delete(`http://localhost:4000/api/newsletters/${id}`);
+      fetchNewsletters();
     // eslint-disable-next-line no-unused-vars
     } catch (err) {
-      if (isMounted) {
-        setSnackbar({
-          open: true,
-          message: "Failed to delete newsletter",
-          severity: "error",
-        });
-      }
-    } finally {
-      if (isMounted) {
-        setLoading(false);
-      }
+      alert("Failed to delete newsletter");
     }
   };
 
-  const handleCloseSnackbar = () => {
-    setSnackbar({ ...snackbar, open: false });
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!formData.title || !formData.description || !formData.author) {
+      alert("Title, description, and author are required.");
+      return;
+    }
+    try {
+      setSaving(true);
+      const data = new FormData();
+      data.append("title", formData.title);
+      data.append("description", formData.description);
+      data.append("author", formData.author);
+      if (formData.image) data.append("image", formData.image);
+      if (formData.pdf) data.append("pdf", formData.pdf);
+
+      if (formData._id) {
+        // Update
+        await axios.put(`http://localhost:4000/api/newsletters/${formData._id}`, data, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+      } else {
+        // Create
+        await axios.post("http://localhost:4000/api/newsletters", data, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+      }
+
+      closeModal();
+      fetchNewsletters();
+    // eslint-disable-next-line no-unused-vars
+    } catch (err) {
+      alert("Failed to save newsletter");
+    } finally {
+      setSaving(false);
+    }
   };
 
-  if (!isMounted) {
-    return null; // Or a loading spinner
-  }
-
   return (
-    <Box sx={{ p: 4, position: "relative" }}>
-      {/* Loading overlay */}
-      <Backdrop
-        sx={{ color: "#fff", zIndex: (theme) => theme.zIndex.drawer + 1 }}
-        open={loading && existingNewsletters.length === 0}
+    <div style={{ backgroundColor: "#feead8", minHeight: "100vh", paddingBottom: 40 }}>
+      <Box
+        sx={{
+          py: 6,
+          textAlign: "center",
+          background: "linear-gradient(to right, #fffaf5, #ffa333)",
+          color: "#1d1d1d",
+        }}
       >
-        <CircularProgress color="inherit" />
-      </Backdrop>
-
-      <Typography
-        variant="h4"
-        sx={{ mb: 2, fontWeight: "bold", color: "#fea434" }}
-      >
-        Newsletter Management
-      </Typography>
-
-      {/* Upload Section */}
-      <Card sx={{ p: 3, mb: 4, boxShadow: 3 }}>
-        <CardContent>
-          <Typography variant="h6" gutterBottom>
-            Upload New Newsletter
+        <Container maxWidth="md">
+          <Typography variant="h4" sx={{ fontWeight: "bold", mb: 2 }}>
+            Manage Newsletters
           </Typography>
+          <Button
+            variant="contained"
+            sx={{ backgroundColor: "#ffa333", mb: 4 }}
+            onClick={() => openForm()}
+          >
+            Create New Newsletter
+          </Button>
+          {error && <Typography color="error">{error}</Typography>}
+        </Container>
+      </Box>
 
-          <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 3 }}>
-            <Button
-              variant="contained"
-              component="label"
-              startIcon={<CloudUpload />}
-              disabled={loading}
+      <Container maxWidth="md" sx={{ py: 6 }}>
+        {loading ? (
+          <Box display="flex" justifyContent="center" mt={6}>
+            <CircularProgress sx={{ color: "#ffa333" }} />
+          </Box>
+        ) : newsletters.length === 0 ? (
+          <Typography textAlign="center" mt={4}>
+            No newsletters available.
+          </Typography>
+        ) : (
+          newsletters.map((newsletter) => (
+            <Card
+              key={newsletter._id}
               sx={{
-                backgroundColor: "#fea434",
-                "&:hover": { backgroundColor: "#e69420" },
+                mb: 4,
+                display: "flex",
+                flexDirection: "row",
+                borderRadius: 3,
+                boxShadow: 3,
+                backgroundColor: "#fffaf5",
+                overflow: "hidden",
+                alignItems: "center",
+                justifyContent: "space-between",
               }}
             >
-              Select PDF
-              <input
-                type="file"
-                hidden
-                accept="application/pdf"
-                onChange={handlePdfUpload}
-                disabled={loading}
-              />
-            </Button>
-
-            {pdfFile ? (
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <Chip
-                  label={pdfFile.name}
-                  onDelete={() => !loading && setPdfFile(null)}
-                  deleteIcon={<Delete />}
-                  variant="outlined"
-                />
-                <Button
-                  variant="outlined"
-                  onClick={() => setPdfFile(null)}
-                  size="small"
-                  disabled={loading}
-                >
-                  Change
-                </Button>
-              </Box>
-            ) : (
-              <Typography variant="body2" color="text.secondary">
-                {loading ? "Processing..." : "No file selected"}
-              </Typography>
-            )}
-          </Box>
-
-          {pdfFile && (
-            <>
-              <Box sx={{ mb: 3, border: "1px solid #eee", p: 2, borderRadius: 1 }}>
-                <Typography variant="subtitle1" gutterBottom>
-                  PDF Preview (First Page)
-                </Typography>
-                <Box sx={{ maxHeight: 300, overflow: "auto" }}>
-                  <Document
-                    file={pdfFile}
-                    onLoadSuccess={onDocumentLoadSuccess}
-                    loading={
-                      <Box sx={{ display: "flex", justifyContent: "center", p: 2 }}>
-                        <CircularProgress size={24} />
-                      </Box>
-                    }
-                    error={
-                      <Alert severity="error">Failed to load PDF preview</Alert>
-                    }
-                  >
-                    <Page
-                      pageNumber={1}
-                      width={300}
-                      renderTextLayer={false}
-                      renderAnnotationLayer={false}
+              <Box sx={{ display: "flex", alignItems: "center", gap: 2, flex: 1 }}>
+                {newsletter.image && (
+                  <Box sx={{ width: 120, height: 100, flexShrink: 0 }}>
+                    <img
+                      src={`http://localhost:4000/uploads/${newsletter.image}`}
+                      alt="Newsletter"
+                      style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 6 }}
                     />
-                  </Document>
-                </Box>
+                  </Box>
+                )}
+
+                <CardContent sx={{ flex: 1 }}>
+                  <Typography
+                    variant="h6"
+                    fontWeight="bold"
+                    gutterBottom
+                    sx={{ color: "#8d4f00" }}
+                  >
+                    {newsletter.title}
+                  </Typography>
+                  <Typography variant="body2" color="textSecondary" noWrap>
+                    {newsletter.description}
+                  </Typography>
+                  <Box display="flex" alignItems="center" mt={1} gap={1}>
+                    <Avatar sx={{ width: 24, height: 24, fontSize: 12 }}>
+                      {newsletter.author?.[0] || "A"}
+                    </Avatar>
+                    <Typography variant="caption">
+                      {newsletter.author || "Admin"} • {new Date(newsletter.createdAt).toLocaleDateString()}
+                    </Typography>
+                  </Box>
+                </CardContent>
               </Box>
 
-              <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
+              <Stack direction="row" spacing={1} sx={{ pr: 2 }}>
                 <Button
                   variant="contained"
-                  onClick={() => setPublishDialogOpen(true)}
-                  startIcon={<Publish />}
-                  disabled={loading}
-                  sx={{
-                    backgroundColor: "#4caf50",
-                    "&:hover": { backgroundColor: "#388e3c" },
-                  }}
+                  sx={{ backgroundColor: "#ffa333", color: "white" }}
+                  onClick={() => openForm(newsletter)}
                 >
-                  Publish Newsletter
+                  Edit
                 </Button>
-              </Box>
-            </>
-          )}
-        </CardContent>
-      </Card>
+                <Button
+                  variant="outlined"
+                  sx={{ borderColor: "#ffa333", color: "#ffa333" }}
+                  onClick={() => handleDelete(newsletter._id)}
+                >
+                  Delete
+                </Button>
+              </Stack>
+            </Card>
+          ))
+        )}
+      </Container>
 
-      {/* Existing Newsletters Section */}
-      <Card sx={{ p: 3, boxShadow: 3 }}>
-        <CardContent>
-          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3 }}>
-            <Typography variant="h6">Published Newsletters</Typography>
-            <Button
-              variant="outlined"
-              startIcon={<Refresh />}
-              onClick={() => window.location.reload()}
-              disabled={loading}
-            >
-              Refresh
-            </Button>
+      {/* Modal for Create/Edit */}
+      <Modal open={openModal} onClose={closeModal}>
+        <Box sx={modalStyle} component="form" onSubmit={handleSubmit} encType="multipart/form-data">
+          <Box sx={{ display: "flex", justifyContent: "space-between", mb: 3 }}>
+            <Typography variant="h5" color="#8d4f00" fontWeight={700}>
+              {formData._id ? "Edit Newsletter" : "Create Newsletter"}
+            </Typography>
+            <IconButton onClick={closeModal} size="small">
+              <CloseIcon />
+            </IconButton>
           </Box>
 
-          {error ? (
-            <Alert severity="error" sx={{ mb: 2 }}>
-              {error}
-              <Button 
-                onClick={() => window.location.reload()} 
-                color="inherit"
-                size="small"
-                sx={{ ml: 1 }}
-              >
-                Retry
-              </Button>
-            </Alert>
-          ) : null}
+          <TextField
+            label="Title"
+            name="title"
+            fullWidth
+            required
+            value={formData.title}
+            onChange={handleInputChange}
+            sx={{ mb: 2 }}
+          />
 
-          {loading && existingNewsletters.length === 0 ? (
-            <Box sx={{ display: "flex", justifyContent: "center", p: 4 }}>
-              <CircularProgress />
-            </Box>
-          ) : existingNewsletters.length === 0 ? (
-            <Typography variant="body1" color="text.secondary" sx={{ textAlign: "center", p: 4 }}>
-              No newsletters found. Upload one to get started.
+          <TextField
+            label="Description"
+            name="description"
+            fullWidth
+            required
+            multiline
+            minRows={3}
+            value={formData.description}
+            onChange={handleInputChange}
+            sx={{ mb: 2 }}
+          />
+
+          <TextField
+            label="Author"
+            name="author"
+            fullWidth
+            required
+            value={formData.author}
+            onChange={handleInputChange}
+            sx={{ mb: 2 }}
+            helperText="Who wrote this newsletter?"
+          />
+
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="body2" mb={1}>
+              Upload Image (optional)
             </Typography>
-          ) : (
-            <Box sx={{ maxHeight: 500, overflow: "auto" }}>
-              {existingNewsletters.map((newsletter) => (
-                <Box
-                  key={newsletter.id}
-                  sx={{
-                    p: 2,
-                    mb: 2,
-                    border: "1px solid #eee",
-                    borderRadius: 1,
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    "&:hover": { backgroundColor: "#fff8f0" },
-                  }}
-                >
-                  <Box sx={{ overflow: "hidden" }}>
-                    <Typography 
-                      variant="subtitle1" 
-                      fontWeight="bold"
-                      noWrap
-                      sx={{ maxWidth: "300px", textOverflow: "ellipsis" }}
-                    >
-                      {newsletter.title}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      Published: {new Date(newsletter.publishDate).toLocaleDateString()}
-                    </Typography>
-                    {newsletter.isPublished ? (
-                      <Chip
-                        label="Published"
-                        color="success"
-                        size="small"
-                        sx={{ ml: 1 }}
-                      />
-                    ) : (
-                      <Chip
-                        label="Draft"
-                        color="warning"
-                        size="small"
-                        sx={{ ml: 1 }}
-                      />
-                    )}
-                  </Box>
-                  <Box>
-                    <Button
-                      variant="outlined"
-                      href={newsletter.fileUrl}
-                      download
-                      target="_blank"
-                      size="small"
-                      startIcon={<PictureAsPdf />}
-                      sx={{ mr: 1 }}
-                      disabled={loading}
-                    >
-                      Download
-                    </Button>
-                    <IconButton
-                      color="error"
-                      onClick={() => handleDelete(newsletter.id)}
-                      disabled={loading}
-                    >
-                      <Delete />
-                    </IconButton>
-                  </Box>
-                </Box>
-              ))}
-            </Box>
-          )}
-        </CardContent>
-      </Card>
+            <input
+              type="file"
+              accept="image/*"
+              name="image"
+              onChange={handleFileChange}
+            />
+          </Box>
 
-      {/* Publish Dialog */}
-      <Dialog
-        open={publishDialogOpen}
-        onClose={() => !loading && setPublishDialogOpen(false)}
-        fullWidth
-        maxWidth="sm"
-      >
-        <DialogTitle>Publish Newsletter</DialogTitle>
-        <DialogContent>
-          <Typography variant="body1" gutterBottom>
-            You are about to publish: <strong>{pdfFile?.name}</strong>
-          </Typography>
-          
-          <Divider sx={{ my: 2 }} />
-          
-          <FormControlLabel
-            control={
-              <Switch
-                checked={publishOptions.isPublished}
-                onChange={(e) =>
-                  setPublishOptions({
-                    ...publishOptions,
-                    isPublished: e.target.checked,
-                  })
-                }
-                disabled={loading}
-              />
-            }
-            label="Make newsletter publicly available"
-            sx={{ mb: 1 }}
-          />
-          
-          <FormControlLabel
-            control={
-              <Switch
-                checked={publishOptions.notifySubscribers}
-                onChange={(e) =>
-                  setPublishOptions({
-                    ...publishOptions,
-                    notifySubscribers: e.target.checked,
-                  })
-                }
-                disabled={loading}
-              />
-            }
-            label="Notify subscribers via email"
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button
-            onClick={() => setPublishDialogOpen(false)}
-            disabled={loading}
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handlePublish}
-            variant="contained"
-            color="success"
-            startIcon={loading ? <CircularProgress size={20} /> : <Publish />}
-            disabled={loading}
-          >
-            {loading ? "Publishing..." : "Publish"}
-          </Button>
-        </DialogActions>
-      </Dialog>
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="body2" mb={1}>
+              Upload PDF (optional)
+            </Typography>
+            <input
+              type="file"
+              accept="application/pdf"
+              name="pdf"
+              onChange={handleFileChange}
+            />
+          </Box>
 
-      {/* Snackbar for notifications */}
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={6000}
-        onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-      >
-        <Alert
-          onClose={handleCloseSnackbar}
-          severity={snackbar.severity}
-          sx={{ width: "100%" }}
-        >
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
-    </Box>
+          <Box sx={{ display: "flex", gap: 2 }}>
+            <Button
+              type="submit"
+              variant="contained"
+              disabled={saving}
+              sx={{ backgroundColor: "#ffa333", color: "white", flex: 1 }}
+            >
+              {saving ? "Saving..." : formData._id ? "Update" : "Create"}
+            </Button>
+            <Button
+              onClick={closeModal}
+              variant="outlined"
+              sx={{ borderColor: "#ffa333", color: "#ffa333", flex: 1 }}
+            >
+              Cancel
+            </Button>
+          </Box>
+        </Box>
+      </Modal>
+    </div>
   );
 };
 

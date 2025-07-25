@@ -3,7 +3,7 @@ import Slider from "react-slick";
 import { Container, Typography, Button } from "@mui/material";
 
 // ✅ Local images (consider compressing and converting to WebP outside code)
-import branding1 from "../assets/oscar.jpg";
+import branding1 from "../assets/branding1.jpg";
 import branding2 from "../assets/branding2.jpg";
 import branding3 from "../assets/branding3.jpg";
 

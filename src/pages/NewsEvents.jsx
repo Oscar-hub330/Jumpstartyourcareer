@@ -1,38 +1,19 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Container,
   Typography,
   Card,
-  CardMedia,
   CardContent,
   Button,
-  Grid,
   Modal,
   Box,
+  CircularProgress,
+  Avatar,
 } from "@mui/material";
 import Footer from "../components/Footer";
-import backgroundImg from "../assets/car.svg";
-
-const newsletters = [
-  {
-    title: "March 2022",
-    image: "/newsletters/images/march-2022.jpg",
-    pdf: "/newsletters/newsletter-march-2022.pdf",
-    description: "This edition covers our latest programs on youth digital skills training.",
-  },
-  {
-    title: "February 2022",
-    image: "/newsletters/images/february-2022.jpg",
-    pdf: "/newsletters/newsletter-february-2022.pdf",
-    description: "Highlights from the Entrepreneurship Bootcamp held in January.",
-  },
-  {
-    title: "January 2022",
-    image: "/newsletters/images/january-2022.jpg",
-    pdf: "/newsletters/newsletter-january-2022.pdf",
-    description: "Kickstarting the year with new community outreach projects.",
-  },
-];
+import axios from "axios";
+import AOS from "aos";
+import "aos/dist/aos.css";
 
 const modalStyle = {
   position: "absolute",
@@ -43,15 +24,20 @@ const modalStyle = {
   borderRadius: 2,
   boxShadow: 24,
   p: 4,
-  maxWidth: 600,
+  maxWidth: 700,
   width: "90%",
   outline: "none",
-  textAlign: "center",
 };
 
 const NewsEvents = () => {
+  const [newsletters, setNewsletters] = useState([]);
   const [open, setOpen] = useState(false);
   const [selectedNewsletter, setSelectedNewsletter] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    AOS.init({ duration: 800, once: true });
+  }, []);
 
   const handleOpen = (newsletter) => {
     setSelectedNewsletter(newsletter);
@@ -63,137 +49,153 @@ const NewsEvents = () => {
     setSelectedNewsletter(null);
   };
 
+  useEffect(() => {
+    const fetchNewsletters = async () => {
+      try {
+        const res = await axios.get("http://localhost:4000/api/newsletters");
+        setNewsletters(res.data);
+      } catch (error) {
+        console.error("Failed to fetch newsletters:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchNewsletters();
+  }, []);
+
   return (
-    <div
-      className="min-h-screen bg-cover bg-center bg-fixed"
-      style={{ backgroundImage: `url(${backgroundImg})` }}
-    >
+    <div style={{ backgroundColor: "#feead8", minHeight: "100vh" }}>
       {/* Hero Section */}
-      <div className="bg-black bg-opacity-70 py-11px2 text-white text-center">
-        <Typography
-          variant="h3"
-          className="font-bold mb-4 text-[#fea434] text-3xl sm:text-4xl md:text-5xl"
-        >
-          Newsletters Archive
-        </Typography>
-        <Typography
-  variant="subtitle1"
-  sx={{
-    maxWidth: "640px", // equivalent to Tailwind's max-w-2xl
-    mx: "auto",         // horizontal auto margin to center
-    textAlign: "center",
-    fontSize: { xs: "1rem", sm: "1.125rem" }, // responsive text sizing
-  }}
->
-  Browse and download our newsletters by month and year.
-</Typography>
+      <Box
+        sx={{
+          py: 6,
+          textAlign: "center",
+          background: "linear-gradient(to right, #fffaf5, #ffa333)",
+          color: "#1d1d1d",
+        }}
+      >
+        <Container maxWidth="md">
+          <Typography variant="h4" sx={{ fontWeight: "bold", mb: 2 }}>
+            JumpStart Newsletters
+          </Typography>
+          <Typography sx={{ fontSize: "1.1rem" }}>
+            Stay updated with our latest publications and revisit past editions.
+          </Typography>
+        </Container>
+      </Box>
 
-      </div>
-
-      {/* Newsletter Grid */}
-      <Container maxWidth="xl" sx={{ py: 6 }}>
-        <Grid
-          container
-          spacing={4}
-          justifyContent="center"
-        >
-          {newsletters.map(({ title, image, pdf, description }, idx) => (
-            <Grid item key={idx} xs={12} sm={6} md={4} lg={3}>
-              <Card
-                sx={{
-                  height: "100%",
-                  display: "flex",
-                  flexDirection: "column",
-                  justifyContent: "space-between",
-                  boxShadow: 3,
-                  textAlign: "center",
-                }}
-              >
-                <CardMedia
-                  component="img"
-                  image={image}
-                  alt={`${title} newsletter image`}
-                  loading="lazy"
-                  sx={{ height: 160, objectFit: "cover" }}
-                />
-                <CardContent
-                  sx={{
-                    display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "space-between",
-                    flexGrow: 1,
-                    gap: 2,
-                    textAlign: "center",
-                  }}
+      {/* Newsletter List - Vertical Format */}
+      <Container maxWidth="md" sx={{ py: 6 }}>
+        {loading ? (
+          <Box display="flex" justifyContent="center" mt={6}>
+            <CircularProgress sx={{ color: "#ffa333" }} />
+          </Box>
+        ) : newsletters.length === 0 ? (
+          <Typography textAlign="center" mt={4}>
+            No newsletters available.
+          </Typography>
+        ) : (
+          newsletters.map((newsletter) => (
+            <Card
+              key={newsletter._id}
+              sx={{
+                mb: 4,
+                display: "flex",
+                flexDirection: "row",
+                borderRadius: 3,
+                boxShadow: 3,
+                backgroundColor: "#fffaf5",
+                overflow: "hidden",
+              }}
+            >
+              {newsletter.image && (
+                <Box sx={{ width: "35%", minHeight: 200 }}>
+                  <img
+                    src={`http://localhost:4000/uploads/${newsletter.image}`}
+                    alt="Newsletter"
+                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                  />
+                </Box>
+              )}
+              <CardContent sx={{ flex: 1 }}>
+                <Typography
+                  variant="h6"
+                  fontWeight="bold"
+                  gutterBottom
+                  sx={{ color: "#8d4f00" }}
                 >
-                  <Typography
-                    variant="h6"
-                    component="h2"
-                    color="#fea434"
-                    fontWeight={600}
-                  >
-                    {title}
-                  </Typography>
+                  {newsletter.title}
+                </Typography>
+                <Typography variant="body2" color="textSecondary">
+                  {newsletter.description?.slice(0, 100)}...
+                </Typography>
 
-                  <Box display="flex" flexDirection="column" gap={1}>
-                    <Button
-                      variant="outlined"
-                      onClick={() => handleOpen({ title, description })}
-                      sx={{
-                        color: "#fea434",
-                        borderColor: "#fea434",
-                        "&:hover": {
-                          backgroundColor: "#fff8f0",
-                          borderColor: "#fea434",
-                        },
-                      }}
-                    >
-                      Read More
-                    </Button>
-                    <Button
-                      variant="contained"
-                      href={pdf}
-                      download
-                      sx={{
-                        backgroundColor: "#fea434",
-                        "&:hover": {
-                          backgroundColor: "#e69420",
-                        },
-                      }}
-                    >
-                      Download
-                    </Button>
-                  </Box>
-                </CardContent>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
+                <Box display="flex" alignItems="center" mt={2} gap={1}>
+                  <Avatar sx={{ width: 24, height: 24, fontSize: 12 }}>
+                    {newsletter.author?.[0] || "A"}
+                  </Avatar>
+                  <Typography variant="caption">
+                    {newsletter.author || "Admin"} • {new Date(newsletter.createdAt).toLocaleDateString()}
+                  </Typography>
+                </Box>
+
+                <Box mt={2} display="flex" gap={2}>
+                  <Button
+                    variant="contained"
+                    onClick={() => handleOpen(newsletter)}
+                    sx={{ backgroundColor: "#ffa333", color: "white" }}
+                  >
+                    Read More
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    href={`http://localhost:4000/${newsletter.pdf}`}
+                    download
+                    sx={{ borderColor: "#ffa333", color: "#ffa333" }}
+                  >
+                    Download PDF
+                  </Button>
+                </Box>
+              </CardContent>
+            </Card>
+          ))
+        )}
       </Container>
 
       {/* Modal */}
       <Modal open={open} onClose={handleClose}>
         <Box sx={modalStyle}>
-          <Typography
-            id="modal-title"
-            variant="h5"
-            mb={2}
-            color="#fea434"
-            fontWeight={700}
-          >
+          {selectedNewsletter?.image && (
+            <img
+              src={`http://localhost:4000/uploads/${selectedNewsletter.image}`}
+              alt="Newsletter Visual"
+              style={{
+                width: "100%",
+                height: "auto",
+                borderRadius: 8,
+                marginBottom: 16,
+              }}
+            />
+          )}
+          <Typography variant="h5" mb={1} color="#8d4f00" fontWeight={700}>
             {selectedNewsletter?.title}
           </Typography>
-          <Typography id="modal-description" variant="body1" mb={4}>
+          <Typography variant="body2" color="textSecondary" mb={1}>
+            By {selectedNewsletter?.author || "Admin"} • {new Date(selectedNewsletter?.createdAt).toLocaleDateString()}
+          </Typography>
+          <Typography variant="body1" mb={4}>
             {selectedNewsletter?.description}
           </Typography>
           <Button
             variant="contained"
-            onClick={handleClose}
-            sx={{
-              backgroundColor: "#fea434",
-              "&:hover": { backgroundColor: "#e69420" },
-            }}
+            href={`http://localhost:4000/${selectedNewsletter?.pdf}`}
+            download
+            sx={{ backgroundColor: "#ffa333", color: "white", mr: 2 }}
           >
+            Download PDF
+          </Button>
+          <Button onClick={handleClose} variant="outlined" sx={{ borderColor: "#ffa333", color: "#ffa333" }}>
             Close
           </Button>
         </Box>

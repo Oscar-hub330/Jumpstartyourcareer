@@ -1,293 +1,247 @@
 import React, { useState } from "react";
+import axios from "axios";
 import {
   Box,
   Typography,
   TextField,
   Button,
   Card,
-  CardContent,
+  CardMedia,
+  IconButton,
   Divider,
+  Stack,
 } from "@mui/material";
-import { Delete, Edit, Image as ImageIcon, Preview, Cancel } from "@mui/icons-material";
+import { Delete, Image as ImageIcon } from "@mui/icons-material";
 
-// Main Component: Blog + Newsletter Upload
-const BlogManagement = () => {
-  // Blog States
-  const [blogs, setBlogs] = useState([]);
+const BlogManager = () => {
   const [newBlog, setNewBlog] = useState({
     title: "",
     content: "",
+    author: "",
+    publicationDate: "",
+    tags: "",
     image: null,
-    imageUrl: "",
   });
-  const [previewing, setPreviewing] = useState(false);
-  const [editingId, setEditingId] = useState(null);
 
-  // Newsletter Upload States
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [pdfFile, setPdfFile] = useState(null);
-  const [message, setMessage] = useState("");
+  const [blogs, setBlogs] = useState([]);
 
-  // Blog Handlers
-  const handleInputChange = (e) => {
-    setNewBlog({ ...newBlog, [e.target.name]: e.target.value });
-  };
-
-  const handleImageUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setNewBlog({
-        ...newBlog,
-        image: file,
-        imageUrl: URL.createObjectURL(file),
-      });
+  const fetchBlogs = async () => {
+    try {
+      const response = await axios.get("http://localhost:4000/api/blogs");
+      setBlogs(response.data);
+    } catch (err) {
+      console.error("Error fetching blogs:", err);
     }
-  };
-
-  const handlePublish = () => {
-    if (!newBlog.title || !newBlog.content || !newBlog.imageUrl) {
-      alert("All fields are required before publishing.");
-      return;
-    }
-
-    if (editingId !== null) {
-      const updatedBlogs = blogs.map((blog) =>
-        blog.id === editingId ? { ...blog, ...newBlog, id: editingId } : blog
-      );
-      setBlogs(updatedBlogs);
-    } else {
-      const blogToAdd = { ...newBlog, id: Date.now() };
-      setBlogs([blogToAdd, ...blogs]);
-    }
-
-    resetForm();
-  };
-
-  const handleEdit = (blog) => {
-    setNewBlog({ ...blog });
-    setEditingId(blog.id);
-    setPreviewing(true);
-  };
-
-  const handleDelete = (id) => {
-    setBlogs(blogs.filter((b) => b.id !== id));
-    if (editingId === id) resetForm();
-  };
-
-  const resetForm = () => {
-    setNewBlog({ title: "", content: "", image: null, imageUrl: "" });
-    setPreviewing(false);
-    setEditingId(null);
-  };
-
-  // Newsletter Upload Handlers
-  const handleFileChange = (e) => {
-    setPdfFile(e.target.files[0]);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (!pdfFile) {
-      setMessage("Please select a PDF file to upload.");
+    if (!newBlog.title || !newBlog.content) {
+      alert("Title and content are required.");
       return;
     }
 
     const formData = new FormData();
-    formData.append("title", title);
-    formData.append("description", description);
-    formData.append("pdf", pdfFile);
+    formData.append("title", newBlog.title);
+    formData.append("content", newBlog.content);
+    formData.append("author", newBlog.author);
+    formData.append("publicationDate", newBlog.publicationDate);
+    formData.append("tags", newBlog.tags);
+    if (newBlog.image) formData.append("image", newBlog.image);
 
     try {
-      const response = await fetch("http://localhost:4000/api/newsletters", {
-        method: "POST",
-        body: formData,
+      await axios.post("http://localhost:4000/api/blogs", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        setMessage("Upload failed: " + errorData.error);
-        return;
-      }
-
-      const data = await response.json();
-      setMessage("Upload successful! Newsletter ID: " + data._id);
-
-      // Reset form
-      setTitle("");
-      setDescription("");
-      setPdfFile(null);
-      e.target.reset();
+      setNewBlog({
+        title: "",
+        content: "",
+        author: "",
+        publicationDate: "",
+        tags: "",
+        image: null,
+      });
+      fetchBlogs();
     } catch (err) {
-      setMessage("Error uploading file: " + err.message);
+      console.error("Error posting blog:", err);
     }
   };
 
+  const handleDelete = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this blog?")) return;
+    try {
+      await axios.delete(`http://localhost:4000/api/blogs/${id}`);
+      fetchBlogs();
+    } catch (err) {
+      console.error("Error deleting blog:", err);
+    }
+  };
+
+  React.useEffect(() => {
+    fetchBlogs();
+  }, []);
+
+  const truncate = (text, maxLength = 150) =>
+    text.length > maxLength ? text.substring(0, maxLength) + "..." : text;
+
   return (
-    <Box sx={{ p: 4 }}>
-      <Typography variant="h4" sx={{ mb: 2, fontWeight: "bold", color: "#fea434" }}>
+    <Box p={4} maxWidth="900px" mx="auto">
+      <Typography variant="h4" mb={4} fontWeight="bold" letterSpacing={1}>
         Blog Management
       </Typography>
 
-      <Card sx={{ p: 3, mb: 4, backgroundColor: "#fff8f0", borderRadius: 3, boxShadow: 3 }}>
-        <CardContent>
-          <Box display="flex" flexDirection="column" gap={2}>
-            <TextField
-              name="title"
-              label="Blog Title"
-              value={newBlog.title}
-              onChange={handleInputChange}
-              fullWidth
+      {/* Form */}
+      <Box component="form" onSubmit={handleSubmit} mb={6}>
+        <Stack spacing={2}>
+          <TextField
+            label="Blog Title"
+            fullWidth
+            value={newBlog.title}
+            onChange={(e) => setNewBlog({ ...newBlog, title: e.target.value })}
+            required
+          />
+          <TextField
+            label="Blog Content"
+            fullWidth
+            multiline
+            rows={4}
+            value={newBlog.content}
+            onChange={(e) => setNewBlog({ ...newBlog, content: e.target.value })}
+            required
+          />
+          <TextField
+            label="Author"
+            fullWidth
+            value={newBlog.author}
+            onChange={(e) => setNewBlog({ ...newBlog, author: e.target.value })}
+            required
+          />
+          <TextField
+            label="Publication Date"
+            fullWidth
+            type="date"
+            InputLabelProps={{ shrink: true }}
+            value={newBlog.publicationDate}
+            onChange={(e) =>
+              setNewBlog({ ...newBlog, publicationDate: e.target.value })
+            }
+          />
+          <TextField
+            label="#Tags (comma-separated)"
+            fullWidth
+            value={newBlog.tags}
+            onChange={(e) => setNewBlog({ ...newBlog, tags: e.target.value })}
+          />
+          <Button
+            variant="outlined"
+            startIcon={<ImageIcon />}
+            component="label"
+            sx={{ width: "fit-content" }}
+          >
+            Upload Picture
+            <input
+              type="file"
+              hidden
+              accept="image/*"
+              onChange={(e) =>
+                setNewBlog({ ...newBlog, image: e.target.files[0] })
+              }
             />
-            <TextField
-              name="content"
-              label="Blog Content"
-              multiline
-              rows={4}
-              value={newBlog.content}
-              onChange={handleInputChange}
-              fullWidth
-            />
+          </Button>
+          <Button variant="contained" color="primary" type="submit" sx={{ maxWidth: 200 }}>
+            Publish Blog
+          </Button>
+        </Stack>
+      </Box>
 
-            <Button
-              variant="outlined"
-              component="label"
-              startIcon={<ImageIcon />}
-              sx={{ alignSelf: "start", color: "#fea434", borderColor: "#fea434" }}
-            >
-              Upload Image
-              <input type="file" hidden accept="image/*" onChange={handleImageUpload} />
-            </Button>
+      <Divider sx={{ mb: 4 }} />
 
-            <Box display="flex" gap={2}>
-              <Button
-                variant="contained"
-                sx={{ bgcolor: "#fea434", mr: 2 }}
-                onClick={handlePublish}
-              >
-                {editingId ? "Save Changes" : "Publish"}
-              </Button>
-              <Button
-                variant="outlined"
-                color="error"
-                startIcon={<Cancel />}
-                onClick={resetForm}
-              >
-                Cancel
-              </Button>
-              {!previewing && (
-                <Button
-                  variant="outlined"
-                  startIcon={<Preview />}
-                  onClick={() => setPreviewing(true)}
-                  sx={{ borderColor: "#fea434", color: "#fea434" }}
-                >
-                  Preview
-                </Button>
-              )}
-            </Box>
-          </Box>
-        </CardContent>
-      </Card>
-
-      {/* Preview Panel */}
-      {previewing && newBlog.title && newBlog.content && newBlog.imageUrl && (
-        <Card sx={{ mb: 4, backgroundColor: "#fff", border: "1px solid #ffe2c0", borderRadius: 3, boxShadow: 1 }}>
-          <CardContent>
-            <Typography variant="h5" color="#fea434" mb={2}>Preview</Typography>
-            <Typography variant="h6">{newBlog.title}</Typography>
-            <Typography variant="body2" mb={2}>{newBlog.content}</Typography>
-            <img
-              src={newBlog.imageUrl}
-              alt="Preview"
-              style={{ width: "100%", maxHeight: 200, objectFit: "cover", borderRadius: 8 }}
-            />
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Existing Blogs */}
-      <Typography variant="h5" sx={{ mb: 2, mt: 4, color: "#fea434" }}>
+      {/* Blog List */}
+      <Typography variant="h5" mb={3} fontWeight="medium" letterSpacing={0.5}>
         All Blog Posts
       </Typography>
 
       {blogs.length === 0 ? (
         <Typography>No blog posts yet.</Typography>
       ) : (
-        blogs.map((blog) => (
-          <Card key={blog.id} sx={{ mb: 3, backgroundColor: "#fff", borderRadius: 3, boxShadow: 1 }}>
-            <CardContent>
-              <Typography variant="h6" color="primary">{blog.title}</Typography>
-              <Typography variant="body2" mb={2}>{blog.content}</Typography>
-              {blog.imageUrl && (
-                <img
-                  src={blog.imageUrl}
-                  alt="Blog"
-                  style={{ width: "100%", maxHeight: 200, objectFit: "cover", borderRadius: 8 }}
+        <Stack spacing={3}>
+          {blogs.map((blog) => (
+            <Card
+              key={blog._id}
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                boxShadow: "0 1px 5px rgba(0,0,0,0.1)",
+                borderRadius: 2,
+                p: 2,
+                "&:hover": { boxShadow: "0 4px 15px rgba(0,0,0,0.15)" },
+              }}
+            >
+              {blog.image ? (
+                <CardMedia
+                  component="img"
+                  src={`http://localhost:4000/uploads/${blog.image}`}
+                  alt={blog.title}
+                  sx={{
+                    width: 120,
+                    height: 90,
+                    borderRadius: 1,
+                    objectFit: "cover",
+                    mr: 3,
+                  }}
                 />
+              ) : (
+                <Box
+                  sx={{
+                    width: 120,
+                    height: 90,
+                    backgroundColor: "#ddd",
+                    borderRadius: 1,
+                    mr: 3,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "#888",
+                    fontSize: 14,
+                  }}
+                >
+                  No Image
+                </Box>
               )}
-              <Divider sx={{ my: 2 }} />
-              <Box display="flex" gap={2}>
-                <Button
-                  variant="outlined"
-                  color="primary"
-                  startIcon={<Edit />}
-                  onClick={() => handleEdit(blog)}
-                >
-                  Edit
-                </Button>
-                <Button
-                  variant="outlined"
-                  color="error"
-                  startIcon={<Delete />}
-                  onClick={() => handleDelete(blog.id)}
-                >
-                  Delete
-                </Button>
+              <Box sx={{ flexGrow: 1 }}>
+                <Typography variant="h6" fontWeight="bold" gutterBottom>
+                  {blog.title}
+                </Typography>
+                <Typography variant="body2" color="text.secondary" mb={1}>
+                  {truncate(blog.content, 180)}
+                </Typography>
+                <Typography variant="caption" color="text.secondary" display="block" mb={0.5}>
+                  By {blog.author}
+                </Typography>
+                <Typography variant="caption" color="text.secondary" display="block" mb={0.5}>
+                  Published on {new Date(blog.publicationDate).toLocaleDateString()}
+                </Typography>
+                {blog.tags && blog.tags.length > 0 && (
+                  <Typography variant="caption" color="text.secondary" display="block">
+                    Tags: {blog.tags.join(", ")}
+                  </Typography>
+                )}
               </Box>
-            </CardContent>
-          </Card>
-        ))
+              <Box>
+                <IconButton
+                  onClick={() => handleDelete(blog._id)}
+                  aria-label="delete"
+                  color="error"
+                >
+                  <Delete />
+                </IconButton>
+              </Box>
+            </Card>
+          ))}
+        </Stack>
       )}
-
-      {/* Newsletter Upload Section */}
-      <Box mt={6}>
-        <Typography variant="h4" sx={{ mb: 2, fontWeight: "bold", color: "#fea434" }}>
-          Upload Newsletter PDF
-        </Typography>
-        <form onSubmit={handleSubmit} style={{ maxWidth: 500 }}>
-          <TextField
-            label="Newsletter Title"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            fullWidth
-            required
-            sx={{ mb: 2 }}
-          />
-          <TextField
-            label="Description"
-            multiline
-            rows={4}
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            fullWidth
-            sx={{ mb: 2 }}
-          />
-          <input
-            type="file"
-            accept="application/pdf"
-            onChange={handleFileChange}
-            required
-          />
-          <Button type="submit" variant="contained" sx={{ mt: 2, bgcolor: "#fea434" }}>
-            Upload PDF
-          </Button>
-          {message && <Typography sx={{ mt: 2 }}>{message}</Typography>}
-        </form>
-      </Box>
     </Box>
   );
 };
 
-export default BlogManagement;
+export default BlogManager;

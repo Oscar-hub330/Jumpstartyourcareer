@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "cross-env NODE_OPTIONS=\"--max-old-space-size=8192\" vite build",
+    "build:windows": "set NODE_OPTIONS=--max-old-space-size=8192 && vite build",
+    "build:original": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },
@@ -16,6 +18,7 @@
     "@mui/material": "^7.2.0",
     "@mui/x-date-pickers": "^8.5.3",
     "@tailwindcss/vite": "^4.1.10",
+    "aos": "^2.3.4",
     "axios": "^1.10.0",
     "body-parser": "^2.2.0",
     "cors": "^2.8.5",
@@ -44,6 +47,7 @@
     "@types/react-dom": "^19.1.2",
     "@vitejs/plugin-react": "^4.4.1",
     "autoprefixer": "^10.4.21",
+    "cross-env": "^7.0.3",
     "eslint": "^9.31.0",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^5.2.0",
@@ -51,6 +55,7 @@
     "globals": "^16.3.0",
     "postcss": "^8.5.6",
     "tailwindcss": "^4.1.10",
+    "terser": "^5.43.1",
     "vite": "^6.3.5"
   }
 }
