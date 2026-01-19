@@ -6,6 +6,7 @@ import {
   TextField,
   Button,
   Link,
+  Divider,
 } from "@mui/material";
 import {
   PhoneInTalk,
@@ -17,15 +18,36 @@ import {
 } from "@mui/icons-material";
 
 const Contact = () => {
+  const contactDetails = [
+    {
+      icon: <PhoneInTalk sx={{ fontSize: 24, color: "#fea434" }} />,
+      label: "Phone",
+      value: "+27 63 964 7736",
+    },
+    {
+      icon: <EmailOutlined sx={{ fontSize: 24, color: "#fea434" }} />,
+      label: "Email",
+      value: "info@jumpstartyourcareer.org.za",
+    },
+    {
+      icon: <LocationOn sx={{ fontSize: 24, color: "#fea434" }} />,
+      label: "Address",
+      value: "01 Bafana Bafana Road, Mbombela, South Africa",
+    },
+  ];
+
+  const socialIcons = [Facebook, Twitter, Instagram];
+
   return (
     <Box
       sx={{
-        minHeight: "80vh",
-        background: "linear-gradient(135deg, #fff7f0, #fff3e6)",
-        py: { xs: 6, md: 8 },
+        minHeight: "70vh",
+        backgroundColor: "#fef7f0",
+        py: { xs: 4, md: 6 },
         px: { xs: 2, md: 0 },
         display: "flex",
         alignItems: "center",
+        fontFamily: "'Inter', sans-serif",
       }}
     >
       <Container
@@ -33,7 +55,7 @@ const Contact = () => {
         sx={{
           display: "flex",
           flexDirection: { xs: "column", md: "row" },
-          gap: 6,
+          gap: { xs: 4, md: 6 },
         }}
       >
         {/* Left Contact Info */}
@@ -43,49 +65,30 @@ const Contact = () => {
             display: "flex",
             flexDirection: "column",
             justifyContent: "center",
-            gap: 4,
-            color: "#333",
+            gap: 3,
             textAlign: { xs: "center", md: "left" },
-            fontFamily: "'Inter', sans-serif",
           }}
         >
           <Typography
-            variant="h4"
+            variant="h5"
             sx={{
-              fontWeight: 600,
+              fontWeight: 700,
               color: "#fea434",
-              letterSpacing: 1.5,
               textTransform: "uppercase",
-              mb: 2,
+              letterSpacing: 1.2,
             }}
           >
             Contact Jumpstart
           </Typography>
 
-          {[
-            {
-              icon: <PhoneInTalk sx={{ fontSize: 28, color: "#fea434" }} />,
-              label: "Phone",
-              value: "+27 81 234 5678",
-            },
-            {
-              icon: <EmailOutlined sx={{ fontSize: 28, color: "#fea434" }} />,
-              label: "Email",
-              value: "info@jumpstart.org.za",
-            },
-            {
-              icon: <LocationOn sx={{ fontSize: 28, color: "#fea434" }} />,
-              label: "Address",
-              value: "123 JumpStart Lane, RuralTech Park, South Africa",
-            },
-          ].map(({ icon, label, value }, i) => (
+          {contactDetails.map(({ icon, label, value }, i) => (
             <Box
               key={i}
               sx={{
                 display: "flex",
                 alignItems: "center",
-                gap: 2,
-                fontSize: 14,
+                gap: 1.5,
+                py: 0.5,
               }}
             >
               {icon}
@@ -95,42 +98,44 @@ const Contact = () => {
                   sx={{
                     fontWeight: 600,
                     textTransform: "uppercase",
-                    color: "#555",
                     fontSize: 11,
-                    letterSpacing: 0.5,
+                    color: "#555",
                   }}
                 >
                   {label}
                 </Typography>
-                <Typography
-                  variant="body2"
-                  sx={{ fontWeight: 500, color: "#222" }}
-                >
+                <Typography variant="body2" sx={{ fontWeight: 500, color: "#222" }}>
                   {value}
                 </Typography>
               </Box>
             </Box>
           ))}
 
+          <Divider sx={{ my: 1.5, borderColor: "#ffd89b" }} />
+
           <Box
             sx={{
               display: "flex",
-              gap: 3,
-              mt: 3,
+              gap: 2.5,
               justifyContent: { xs: "center", md: "flex-start" },
             }}
           >
-            {[Facebook, Twitter, Instagram].map((Icon, i) => (
+            {socialIcons.map((Icon, i) => (
               <Link
-                href="#"
+                href="https://www.facebook.com/JumpstartYourCareer"
                 key={i}
                 target="_blank"
                 rel="noopener noreferrer"
                 sx={{
                   color: "#fea434",
-                  fontSize: 22,
-                  transition: "color 0.3s ease",
-                  "&:hover": { color: "#d18e0b" },
+                  fontSize: 20,
+                  transition: "all 0.3s ease",
+                  "&:hover": {
+                    color: "#fff",
+                    backgroundColor: "#fea434",
+                    borderRadius: "50%",
+                    p: 0.5,
+                  },
                 }}
               >
                 <Icon />
@@ -145,23 +150,22 @@ const Contact = () => {
             flex: 1,
             backgroundColor: "#fff",
             borderRadius: 3,
-            boxShadow: "0 6px 20px rgba(254, 164, 52, 0.12)",
-            p: { xs: 3, md: 5 },
-            fontFamily: "'Inter', sans-serif",
+            boxShadow: "0 4px 15px rgba(254, 164, 52, 0.12)",
+            p: { xs: 3, md: 4 },
           }}
         >
           <Typography
-            variant="h5"
+            variant="h6"
             sx={{
-              fontWeight: 600,
+              fontWeight: 700,
               color: "#fea434",
               mb: 3,
-              letterSpacing: 1.5,
-              textTransform: "uppercase",
               textAlign: "center",
+              textTransform: "uppercase",
+              letterSpacing: 1.2,
             }}
           >
-            Send Us A Message
+            Send Us a Message
           </Typography>
 
           <form>
@@ -179,7 +183,11 @@ const Contact = () => {
                 fullWidth
                 required
                 size="small"
-                sx={{ mb: 2 }}
+                sx={{
+                  mb: 2,
+                  "& .MuiOutlinedInput-root": { borderRadius: 2.5 },
+                  "& .MuiInputLabel-root": { fontWeight: 500 },
+                }}
               />
             ))}
 
@@ -192,7 +200,11 @@ const Contact = () => {
               fullWidth
               required
               size="small"
-              sx={{ mb: 3 }}
+              sx={{
+                mb: 3,
+                "& .MuiOutlinedInput-root": { borderRadius: 2.5 },
+                "& .MuiInputLabel-root": { fontWeight: 500 },
+              }}
             />
 
             <Button
@@ -201,13 +213,16 @@ const Contact = () => {
               fullWidth
               sx={{
                 backgroundColor: "#fea434",
+                color: "#fff",
                 fontWeight: 700,
-                letterSpacing: 1.5,
-                py: 1.3,
+                letterSpacing: 1.2,
+                py: 1.2,
                 textTransform: "uppercase",
-                transition: "background-color 0.3s ease",
+                transition: "all 0.3s ease",
                 "&:hover": {
-                  backgroundColor: "#d18e0b",
+                  backgroundColor: "#fff",
+                  color: "#fea434",
+                  border: "1px solid #fea434",
                 },
               }}
             >

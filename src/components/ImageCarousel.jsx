@@ -1,127 +1,159 @@
-import React, { useState } from "react";
-import Slider from "react-slick";
-import { Container, Typography, Button } from "@mui/material";
+import React, { useRef, useState } from "react";
+import { Swiper, SwiperSlide } from "swiper/react";
+import { Autoplay, Navigation } from "swiper/modules";
+import { Typography, Button, IconButton } from "@mui/material";
+import { Link } from "react-router-dom";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
-// ✅ Local images (consider compressing and converting to WebP outside code)
-import branding1 from "../assets/branding1.jpg";
-import branding2 from "../assets/branding2.jpg";
-import branding3 from "../assets/branding3.jpg";
+import "swiper/css";
+import "swiper/css/navigation";
+
+import branding1 from "../assets/branding1.webp";
+import branding2 from "../assets/branding2.webp";
+import branding3 from "../assets/branding3.webp";
 
 const slides = [
   {
     title: "Empowering rural youth and Women",
     subtitle: "Equipping future leaders through tech, training, and innovation.",
+    description: "Jumpstart programs provide real-world opportunities and mentorship.",
+    buttonText: "Learn More",
     image: branding1,
+    link: "/services",
   },
   {
     title: "Agricultural Skills for the Future",
-    subtitle: "Jumpstart programs provide real-world opportunities and mentorship.",
+    subtitle: "Building Agricultural Skills",
+    description: "Hands-on programs to equip youth with sustainable farming knowledge.",
+    buttonText: "Explore Programs",
     image: branding2,
+    link: "/projects",
   },
   {
-    title: "Tech-Driven Change",
-    subtitle: "Transforming communities through ICT education and outreach.",
+    title: "Entrepreneurship Development",
+    subtitle: "Creating Opportunities",
+    description: "Learn to create, manage, and scale successful enterprises in your community.",
+    buttonText: "Get Started",
     image: branding3,
+    link: "/about",
   },
 ];
 
 const ImageCarousel = () => {
-  const [loadedImages, setLoadedImages] = useState({});
-
-  const handleImageLoad = (index) => {
-    setLoadedImages((prev) => ({ ...prev, [index]: true }));
-  };
-
-  const settings = {
-    dots: true,
-    infinite: true,
-    speed: 700,
-    autoplay: true,
-    autoplaySpeed: 6000,
-    slidesToShow: 1,
-    slidesToScroll: 1,
-    arrows: false,
-    pauseOnHover: false,
-    lazyLoad: "ondemand", // ✅ Lazy load only when needed
-  };
+  const swiperRef = useRef(null);
+  const [activeIndex, setActiveIndex] = useState(0);
 
   return (
-    <div className="w-full">
-      <Slider {...settings}>
+    <div className="w-full relative">
+      {/* Swiper */}
+      <Swiper
+        modules={[Autoplay, Navigation]}
+        loop
+        autoplay={{ delay: 5000, disableOnInteraction: false }}
+        navigation={{
+          prevEl: ".swiper-button-prev",
+          nextEl: ".swiper-button-next",
+        }}
+        onSwiper={(swiper) => (swiperRef.current = swiper)}
+        onSlideChange={(swiper) => setActiveIndex(swiper.realIndex)}
+        speed={600}
+        className="w-full"
+      >
         {slides.map((slide, index) => (
-          <div key={index} className="relative h-[70vh] md:h-[50vh]">
-            {/* ✅ Placeholder while loading */}
-            {!loadedImages[index] && (
-              <div className="absolute inset-0 bg-gray-200 animate-pulse z-0" />
-            )}
+          <SwiperSlide key={index}>
+            <div className="flex flex-col lg:flex-row items-center w-full h-[60vh] md:h-[50vh] bg-white">
+              {/* Left Column - Text */}
+              <div className="lg:w-1/2 w-full p-6 lg:p-16 flex flex-col justify-center h-full z-10 relative">
+                <Typography
+                  variant="subtitle2"
+                  sx={{
+                    color: "#fea434",
+                    fontWeight: "bold",
+                    mb: 2,
+                    textTransform: "uppercase",
+                    fontSize: { xs: "0.85rem", md: "0.95rem" },
+                  }}
+                >
+                  {slide.subtitle}
+                </Typography>
 
-            {/* ✅ Image with smooth fade-in */}
-            <img
-              src={slide.image}
-              alt={slide.title}
-              loading="lazy"
-              onLoad={() => handleImageLoad(index)}
-              className={`w-full h-full object-cover brightness-75 transition-opacity duration-700 ${
-                loadedImages[index] ? "opacity-100" : "opacity-0"
-              }`}
-            />
+                <Typography
+                  variant="h3"
+                  sx={{
+                    fontWeight: "bold",
+                    mb: 3,
+                    fontSize: { xs: "2rem", md: "3rem" },
+                    color: "#111827",
+                  }}
+                >
+                  {slide.title}
+                </Typography>
 
-            {/* ✅ Overlay with content */}
-            <div className="absolute inset-0 flex items-center bg-gradient-to-t from-black/70 via-transparent to-transparent z-10">
-              <Container maxWidth="lg" className="text-white px-6">
-                <div className="max-w-2xl animate-fade-in">
-                  <Typography
-                    variant="h3"
-                    sx={{
-                      color: "#fea434",
-                      fontWeight: "bold",
-                      fontSize: {
-                        xs: "2rem",
-                        sm: "2.5rem",
-                        md: "3.5rem",
-                      },
-                      mb: 2,
-                    }}
-                  >
-                    {slide.title}
-                  </Typography>
-                  <Typography
-                    variant="body1"
-                    sx={{
-                      color: "#fff",
-                      fontSize: {
-                        xs: "1rem",
-                        md: "1.25rem",
-                      },
-                      mb: 4,
-                    }}
-                  >
-                    {slide.subtitle}
-                  </Typography>
-                  <Button
-                    variant="contained"
-                    sx={{
-                      backgroundColor: "#fea434",
-                      color: "#000",
-                      fontWeight: "bold",
-                      px: 3,
-                      py: 1.5,
-                      borderRadius: "10px",
-                      textTransform: "none",
-                      transition: "0.3s",
-                      "&:hover": {
-                        backgroundColor: "#e0922c",
-                      },
-                    }}
-                  >
-                    Learn More
-                  </Button>
+                <Typography
+                  variant="body1"
+                  sx={{
+                    mb: 6,
+                    fontSize: { xs: "0.95rem", md: "1.2rem" },
+                    color: "#374151",
+                  }}
+                >
+                  {slide.description}
+                </Typography>
+
+                {/* Button linked to relative page */}
+                <Button
+                  component={Link}
+                  to={slide.link}
+                  variant="contained"
+                  sx={{
+                    backgroundColor: "#fea434",
+                    color: "#fff",
+                    fontWeight: "bold",
+                    px: 4,
+                    py: 1.5,
+                    borderRadius: "10px",
+                    textTransform: "none",
+                    "&:hover": { backgroundColor: "#e06b1f" },
+                  }}
+                >
+                  {slide.buttonText}
+                </Button>
+              </div>
+
+              {/* Right Column - Image */}
+              <div className="lg:w-1/2 w-full h-full flex justify-center items-center relative">
+                <img
+                  src={slide.image}
+                  alt={slide.title}
+                  loading={index === 0 ? "eager" : "lazy"}
+                  fetchPriority={index === 0 ? "high" : "auto"}
+                  className="w-full h-full object-cover rounded-lg"
+                />
+
+                {/* Dots positioned over image */}
+                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-3 z-20">
+                  {slides.map((_, i) => (
+                    <span
+                      key={i}
+                      className={`h-3 rounded-full transition-all duration-300 ${
+                        i === activeIndex ? "w-6 bg-orange-500" : "w-3 bg-white/70"
+                      }`}
+                    />
+                  ))}
                 </div>
-              </Container>
+              </div>
             </div>
-          </div>
+          </SwiperSlide>
         ))}
-      </Slider>
+      </Swiper>
+
+      {/* Navigation Arrows */}
+      <IconButton className="swiper-button-prev hidden sm:flex absolute left-4 top-1/2 -translate-y-1/2 bg-white/70 hover:bg-white/90 p-2 rounded-full shadow z-10">
+        <ChevronLeft size={18} />
+      </IconButton>
+      <IconButton className="swiper-button-next hidden sm:flex absolute right-4 top-1/2 -translate-y-1/2 bg-white/70 hover:bg-white/90 p-2 rounded-full shadow z-10">
+        <ChevronRight size={18} />
+      </IconButton>
     </div>
   );
 };

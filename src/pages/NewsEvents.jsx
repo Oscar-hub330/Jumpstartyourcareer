@@ -1,20 +1,26 @@
-import React, { useEffect, useState } from "react";
+/* eslint-disable no-unused-vars */
+import React, { useState, useEffect } from "react";
 import {
-  Container,
+  Box,
   Typography,
   Card,
   CardContent,
+  CardMedia,
   Button,
   Modal,
-  Box,
   CircularProgress,
   Avatar,
+  Chip,
 } from "@mui/material";
-import Footer from "../components/Footer";
-import axios from "axios";
-import AOS from "aos";
+import PersonIcon from "@mui/icons-material/Person";
+import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import DownloadIcon from "@mui/icons-material/Download";
-import "aos/dist/aos.css";
+import CloseIcon from "@mui/icons-material/Close";
+import ArticleIcon from "@mui/icons-material/Article";
+import axios from "axios";
+import Footer from "../components/Footer";
+
+const ACCENT = "#fea434";
 
 const modalStyle = {
   position: "absolute",
@@ -27,17 +33,32 @@ const modalStyle = {
   p: 4,
   maxWidth: 700,
   width: "90%",
-  outline: "none",
+  maxHeight: "90vh",
+  overflowY: "auto",
 };
 
 const NewsEvents = () => {
   const [newsletters, setNewsletters] = useState([]);
-  const [open, setOpen] = useState(false);
   const [selectedNewsletter, setSelectedNewsletter] = useState(null);
+  const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    AOS.init({ duration: 800, once: true });
+    const fetchNewsletters = async () => {
+      try {
+        const res = await axios.get("http://localhost:4000/api/newsletters");
+        const list = Array.isArray(res.data)
+          ? res.data
+          : res.data?.data || res.data?.newsletters || [];
+        setNewsletters(list);
+      } catch (error) {
+        console.error("Failed to fetch newsletters:", error);
+        setNewsletters([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchNewsletters();
   }, []);
 
   const handleOpen = (newsletter) => {
@@ -50,121 +71,120 @@ const NewsEvents = () => {
     setSelectedNewsletter(null);
   };
 
-  useEffect(() => {
-    const fetchNewsletters = async () => {
-      try {
-        const res = await axios.get("http://localhost:4000/api/newsletters");
-        setNewsletters(res.data);
-      } catch (error) {
-        console.error("Failed to fetch newsletters:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchNewsletters();
-  }, []);
+  const formatDate = (dateString) =>
+    dateString
+      ? new Date(dateString).toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        })
+      : "—";
 
   return (
-    <div style={{ backgroundColor: "#feead8", minHeight: "100vh" }}>
-      {/* Hero Section */}
+    <Box sx={{ minHeight: "50vh", backgroundColor: "#fff7ed" }}>
+      {/* Hero */}
       <Box
         sx={{
-          py: 6,
+          py: 7,
           textAlign: "center",
-          background: "linear-gradient(to right, #fffaf5, #ffa333)",
-          color: "#1d1d1d",
+          color: "#fff",
+          background: `linear-gradient(135deg, ${ACCENT}, #ffb84d)`,
         }}
       >
-        <Container maxWidth="md">
-          <Typography variant="h4" sx={{ fontWeight: "bold", mb: 2 }}>
-            JumpStart Newsletters
-          </Typography>
-          <Typography sx={{ fontSize: "1.1rem" }}>
-            Stay updated with our latest publications and revisit past editions.
-          </Typography>
-        </Container>
+        <Typography
+          variant="h6"
+          sx={{ mb: 1, display: "inline-flex", alignItems: "center", gap: 1 }}
+        >
+          <ArticleIcon fontSize="small" /> Publications
+        </Typography>
+        <Typography variant="h4" sx={{ fontWeight: "bold", mb: 2 }}>
+          Newsletter Archive
+        </Typography>
+        <Typography variant="body1" sx={{ maxWidth: 600, mx: "auto" }}>
+          Stay informed with our latest organizational updates and publications.
+        </Typography>
       </Box>
 
-      {/* Newsletter List */}
-      <Container maxWidth="md" sx={{ py: 6 }}>
+      {/* List */}
+      <Box sx={{ maxWidth: 1000, mx: "auto", py: 0, px: 2 }}>
         {loading ? (
-          <Box display="flex" justifyContent="center" mt={6}>
-            <CircularProgress sx={{ color: "#ffa333" }} />
+          <Box sx={{ display: "flex", justifyContent: "center", py: 20 }}>
+            <CircularProgress sx={{ color: ACCENT }} />
           </Box>
         ) : newsletters.length === 0 ? (
-          <Typography textAlign="center" mt={4}>
-            No newsletters available.
-          </Typography>
+          <Box sx={{ textAlign: "center", py: 20 }}>
+            <ArticleIcon sx={{ fontSize: 60, mb: 2, color: ACCENT }} />
+            <Typography variant="h6">No newsletters available</Typography>
+            <Typography>Check back later.</Typography>
+          </Box>
         ) : (
-          newsletters.map((newsletter) => (
-            <Card
-              key={newsletter._id}
-              sx={{
-                mb: 4,
-                display: "flex",
-                flexDirection: "row",
-                borderRadius: 3,
-                boxShadow: 3,
-                backgroundColor: "#fffaf5",
-                overflow: "hidden",
-              }}
-            >
-              {newsletter.image && (
-                <Box sx={{ width: "35%", minHeight: 200 }}>
-                  <img
-                    src={`http://localhost:4000/uploads/${newsletter.image}`}
-                    alt="Newsletter"
-                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            {newsletters.map((nl) => (
+              <Card
+                key={nl._id}
+                sx={{
+                  display: "flex",
+                  overflow: "hidden",
+                  borderRadius: 2,
+                  boxShadow: 3,
+                }}
+              >
+                {nl.image && (
+                  <CardMedia
+                    component="img"
+                    sx={{ width: 250, objectFit: "cover" }}
+                    image={`http://localhost:4000/uploads/${nl.image}`}
+                    alt={nl.title}
                   />
-                </Box>
-              )}
-              <CardContent sx={{ flex: 1 }}>
-                <Typography
-                  variant="h6"
-                  fontWeight="bold"
-                  gutterBottom
-                  sx={{ color: "#8d4f00" }}
-                >
-                  {newsletter.title}
-                </Typography>
-                <Typography variant="body2" color="textSecondary">
-                  {newsletter.description?.slice(0, 100)}...
-                </Typography>
-
-                <Box display="flex" alignItems="center" mt={2} gap={1}>
-                  <Avatar sx={{ width: 24, height: 24, fontSize: 12 }}>
-                    {newsletter.author?.[0] || "A"}
-                  </Avatar>
-                  <Typography variant="caption">
-                    {newsletter.author || "Admin"} •{" "}
-                    {new Date(newsletter.createdAt).toLocaleDateString()}
+                )}
+                <CardContent sx={{ flex: 1 }}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "start",
+                    }}
+                  >
+                    <Typography variant="h6" sx={{ mb: 1, fontWeight: "bold" }}>
+                      {nl.title}
+                    </Typography>
+                    {nl.pdf && <Chip label="PDF" sx={{ borderColor: ACCENT, color: ACCENT }} />}
+                  </Box>
+                  <Typography variant="body2" sx={{ mb: 2 }}>
+                    {nl.description ? `${nl.description.slice(0, 120)}...` : "No description available."}
                   </Typography>
-                </Box>
-
-                <Box mt={2} display="flex" gap={2}>
-                  <Button
-                    variant="contained"
-                    onClick={() => handleOpen(newsletter)}
-                    sx={{ backgroundColor: "#ffa333", color: "white" }}
-                  >
-                    Read More
-                  </Button>
-                  <Button
-                    variant="outlined"
-                    startIcon={<DownloadIcon />}
-                    href={`http://localhost:4000/uploads/${newsletter.pdf}`}
-                    download
-                    sx={{ borderColor: "#ffa333", color: "#ffa333" }}
-                  >
-                    Download PDF
-                  </Button>
-                </Box>
-              </CardContent>
-            </Card>
-          ))
+                  <Box sx={{ display: "flex", gap: 2, alignItems: "center", mb: 2 }}>
+                    <Avatar sx={{ width: 24, height: 24 }}>{(nl.author || "A")[0]}</Avatar>
+                    <Typography variant="caption">
+                      {nl.author || "Admin"} • {formatDate(nl.createdAt)}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: "flex", gap: 2 }}>
+                    <Button
+                      variant="contained"
+                      sx={{ backgroundColor: ACCENT }}
+                      onClick={() => handleOpen(nl)}
+                    >
+                      Read More
+                    </Button>
+                    {nl.pdf && (
+                      <Button
+                        variant="outlined"
+                        startIcon={<DownloadIcon />}
+                        sx={{ borderColor: ACCENT, color: ACCENT }}
+                        href={`http://localhost:4000/uploads/${nl.pdf}`}
+                        download
+                      >
+                        Download PDF
+                      </Button>
+                    )}
+                  </Box>
+                </CardContent>
+              </Card>
+            ))}
+          </Box>
         )}
-      </Container>
+      </Box>
 
       {/* Modal */}
       <Modal open={open} onClose={handleClose}>
@@ -172,53 +192,40 @@ const NewsEvents = () => {
           {selectedNewsletter?.image && (
             <img
               src={`http://localhost:4000/uploads/${selectedNewsletter.image}`}
-              alt="Newsletter Visual"
-              style={{
-                width: "100%",
-                height: "auto",
-                borderRadius: 8,
-                marginBottom: 16,
-              }}
+              alt=""
+              style={{ width: "100%", borderRadius: 8, marginBottom: 16 }}
             />
           )}
-          <Typography variant="h5" mb={1} color="#8d4f00" fontWeight={700}>
+          <Typography variant="h5" sx={{ fontWeight: "bold", mb: 1, color: ACCENT }}>
             {selectedNewsletter?.title}
           </Typography>
-          <Typography variant="body2" color="textSecondary" mb={1}>
-            By {selectedNewsletter?.author || "Admin"} •{" "}
-            {new Date(selectedNewsletter?.createdAt).toLocaleDateString()}
+          <Typography variant="body2" sx={{ mb: 2 }}>
+            By {selectedNewsletter?.author || "Admin"} • {formatDate(selectedNewsletter?.createdAt)}
           </Typography>
-          <Typography variant="body1" mb={2}>
+          <Typography variant="body1" sx={{ mb: 2 }}>
             {selectedNewsletter?.description}
           </Typography>
-
-          {/* PDF Preview */}
           {selectedNewsletter?.pdf && (
             <iframe
-              src={`http://localhost:4000/uploads/${selectedNewsletter?.pdf}`}
+              src={`http://localhost:4000/uploads/${selectedNewsletter.pdf}`}
               title="Newsletter PDF"
-              width="100%"
-              height="500px"
-              style={{ border: "1px solid #ccc", borderRadius: 8, marginBottom: 16 }}
+              style={{ width: "100%", height: 500, border: "1px solid #ccc", borderRadius: 8, marginBottom: 16 }}
             />
           )}
-
-          {/* Action Buttons */}
-          <Box display="flex" justifyContent="flex-start" gap={2}>
-            <Button
-              variant="contained"
-              startIcon={<DownloadIcon />}
-              href={`http://localhost:4000/uploads/${selectedNewsletter?.pdf}`}
-              download
-              sx={{ backgroundColor: "#ffa333", color: "white" }}
-            >
-              Download PDF
-            </Button>
-            <Button
-              onClick={handleClose}
-              variant="outlined"
-              sx={{ borderColor: "#ffa333", color: "#ffa333" }}
-            >
+          <Box sx={{ display: "flex", gap: 2 }}>
+            {selectedNewsletter?.pdf && (
+              <Button
+                variant="contained"
+                startIcon={<DownloadIcon />}
+                sx={{ backgroundColor: ACCENT }}
+                href={`http://localhost:4000/uploads/${selectedNewsletter.pdf}`}
+                download
+              >
+                Download PDF
+              </Button>
+            )}
+            <Button variant="outlined" onClick={handleClose} sx={{ borderColor: ACCENT, color: ACCENT }}>
+              <CloseIcon sx={{ fontSize: 18, mr: 1 }} />
               Close
             </Button>
           </Box>
@@ -226,7 +233,7 @@ const NewsEvents = () => {
       </Modal>
 
       <Footer />
-    </div>
+    </Box>
   );
 };
 

@@ -1,21 +1,27 @@
-import React, { } from "react";
+import React, { Suspense, lazy, memo } from "react";
 import { Container, Typography, Card, CardContent, Box } from "@mui/material";
-import Slider from "react-slick";
-import Footer from "../components/Footer";
+import { Link } from "react-router-dom";
 
-// Sponsor logos
-import BankSetaLogo from "../assets/sponsors/bankseta.png";
-import TetaLogo from "../assets/sponsors/teta.png";
-import SasolLogo from "../assets/sponsors/sasol.png";
-import ChietaLogo from "../assets/sponsors/chieta.png";
-import VodacomLogo from "../assets/sponsors/vodacom.png";
-import FpmSetaLogo from "../assets/sponsors/fpmseta.png";
-import PublicWorksLogo from "../assets/sponsors/publicworks.png";
-import ThaboMbekiFoundationLogo from "../assets/sponsors/thabombekifoundation.png";
-import DsdLogo from "../assets/sponsors/dsd.png";
-import QCTOlogo from "../assets/sponsors/QCTOlogo.png";
+// Lazy chunks
+const Slider = lazy(() => import("react-slick"));
 
-const sponsors = [
+// Static assets (already webp ✅)
+import BankSetaLogo from "../assets/sponsors/bankseta.webp";
+import TetaLogo from "../assets/sponsors/teta.webp";
+import SasolLogo from "../assets/sponsors/sasol.webp";
+import ChietaLogo from "../assets/sponsors/chieta.webp";
+import VodacomLogo from "../assets/sponsors/vodacom.webp";
+import FpmSetaLogo from "../assets/sponsors/fpmseta.webp";
+import PublicWorksLogo from "../assets/sponsors/publicworks.webp";
+import ThaboMbekiFoundationLogo from "../assets/sponsors/ThaboMbekiFoundation.webp";
+import DsdLogo from "../assets/sponsors/dsd.webp";
+import QCTOlogo from "../assets/sponsors/QCTOlogo.webp";
+
+/* =======================
+   STATIC CONSTANTS
+======================= */
+
+const sponsors = Object.freeze([
   { name: "Thabo Mbeki Foundation", logo: ThaboMbekiFoundationLogo },
   { name: "Vodacom", logo: VodacomLogo },
   { name: "Department of Social Development", logo: DsdLogo },
@@ -26,199 +32,154 @@ const sponsors = [
   { name: "FP&M Seta", logo: FpmSetaLogo },
   { name: "Department of Public Works", logo: PublicWorksLogo },
   { name: "QCTO", logo: QCTOlogo },
-];
+]);
 
-const sponsorSettings = {
-  dots: true,
+const sponsorSettings = Object.freeze({
+  dots: false,
+  arrows: false,
   infinite: true,
-  speed: 500,
+  speed: 400,
   autoplay: true,
-  autoplaySpeed: 2500,
-  lazyLoad: "ondemand", // ✅ Lazy load sponsor logos
+  autoplaySpeed: 3000,
   slidesToShow: 4,
   slidesToScroll: 1,
+  lazyLoad: "progressive",
+  pauseOnHover: true,
   responsive: [
     { breakpoint: 1024, settings: { slidesToShow: 3 } },
     { breakpoint: 768, settings: { slidesToShow: 2 } },
     { breakpoint: 480, settings: { slidesToShow: 1 } },
   ],
-};
+});
 
 const whiteCardGradient =
-  "linear-gradient(135deg, rgba(255,255,255,0.95), rgba(245,250,255,0.92))";
+  "linear-gradient(135deg, rgba(255,255,255,0.96), rgba(245,250,255,0.92))";
 
 const futuristicBg =
-  "linear-gradient(135deg, #fffaf5, #fef0e5, #ffe5cb)"; // ✅ New background
+  "linear-gradient(135deg, #fffaf5, #fef0e5, #ffe5cb)";
 
+/* =======================
+   COMPONENT
+======================= */
 
-
-const About = () => {
+const About = memo(() => {
   return (
-    <div
-      className="text-orange-400 min-h-screen"
-      style={{
+    <Box
+      sx={{
+        minHeight: "100vh",
         background: futuristicBg,
-        backgroundAttachment: "fixed",
-        paddingBottom: "2rem",
+        pt: "80px",
+        pb: 6,
       }}
     >
-      {/* Hero */}
-      <section className="py-10 mx-4 mt-6">
-        <Container maxWidth="md" className="text-center">
-          <Typography
-            variant="h4"
-            className="font-bold text-[#fea434] mb-6 tracking-wide"
-          >
+      {/* HERO */}
+      <section className="py-0 mx-4">
+        <Container maxWidth="md" sx={{ textAlign: "center" }}>
+          <Typography variant="h4" sx={{ fontWeight: 700, color: "#fea434", mb: 3 }}>
             About Us
           </Typography>
-          <Typography
-            variant="body1"
-            className="text-gray-800 text-lg leading-relaxed px-2 md:px-8"
-            sx={{
-              fontWeight: 400,
-              textShadow: "0px 1px 2px rgba(255,255,255,0.3)",
-            }}
-          >
-            Jumpstart is a youth-focused non-profit organisation that empowers
-            young people in rural areas through digital skills, entrepreneurship
-            training, and career development programs.
+
+          <Typography sx={{ color: "#333", lineHeight: 1.8 }}>
+            Jumpstart is a youth-focused non-profit organisation empowering rural
+            youth through digital skills, entrepreneurship, and career programs.
           </Typography>
         </Container>
       </section>
 
-      {/* Mission, Vision, Values */}
-      <section className="py-0 mx-4 mt-8">
+      {/* VALUES */}
+      <section className="mx-4 mt-8">
         <Container maxWidth="lg">
-          <div className="grid md:grid-cols-3 gap-6 text-center">
-            {[
-              {
-                title: "Vision",
-                desc: "A society where both rural youth and women use their skills to contribute meaningfully to the community.",
-              },
-              {
-                title: "Mission",
-                desc: "We empower rural youth and women with various skills—especially digital literacy and entrepreneurship—ensuring no one is left behind.",
-              },
-              {
-                title: "Values",
-                desc: "Empowerment, Integrity, Innovation, Inclusivity, and Impact.",
-              },
-            ].map((item, index) => (
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: { xs: "1fr", md: "repeat(3, 1fr)" },
+              gap: 3,
+            }}
+          >
+            {["Vision", "Mission", "Values"].map((title, i) => (
               <Card
-                key={index}
+                key={title}
                 sx={{
                   border: "2px solid #fea434",
-                  borderRadius: 2,
-                  boxShadow: 3,
-                  height: "100%",
                   background: whiteCardGradient,
-                  transition: "transform 0.2s ease-in-out",
-                  "&:hover": { transform: "scale(1.02)" },
+                  borderRadius: 2,
                 }}
               >
                 <CardContent>
-                  <Typography
-                    variant="h6"
-                    sx={{ color: "#fea434", fontWeight: 600, mb: 1 }}
-                  >
-                    {item.title}
+                  <Typography sx={{ color: "#fea434", fontWeight: 600, mb: 1 }}>
+                    {title}
                   </Typography>
-                  <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                    {item.desc}
+                  <Typography variant="body2" color="text.secondary">
+                    {[
+                      "A society where rural youth and women contribute meaningfully using their skills.",
+                      "Empowering rural youth and women through digital literacy and entrepreneurship.",
+                      "Empowerment, Integrity, Innovation, Inclusivity, Impact.",
+                    ][i]}
                   </Typography>
                 </CardContent>
               </Card>
             ))}
-          </div>
+          </Box>
         </Container>
       </section>
 
-      {/* Sponsors */}
-      <section className="py-0 mx-4 mt-6 mb-8">
+      {/* PARTNERS – DEFERRED */}
+      <section className="mx-4 mt-12 mb-12">
         <Container maxWidth="lg">
-          <Typography
-            variant="h4"
-            color="#fea434"
-            textAlign="center"
-            gutterBottom
-            mb={6}
-          >
+          <Typography textAlign="center" sx={{ color: "#fea434", mb: 4 }} variant="h4">
             Partners of Jumpstart
           </Typography>
-          <Card
-            sx={{
-              border: "2px solid #fea434",
-              borderRadius: 2,
-              boxShadow: 3,
-              background: whiteCardGradient,
-              p: 3,
-            }}
-          >
-            <Slider {...sponsorSettings}>
-              {sponsors.map((sponsor) => (
-                <Box
-                  key={sponsor.name}
-                  sx={{
-                    display: "flex",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    px: 2,
-                  }}
-                >
-                  <Box
-                    component="img"
-                    src={sponsor.logo}
-                    alt={`${sponsor.name} logo`}
-                    loading="lazy" // ✅ Lazy loading added
-                    sx={{
-                      maxHeight: 100,
-                      maxWidth: "100%",
-                      objectFit: "contain",
-                      transition: "opacity 0.5s ease-in-out",
-                    }}
-                  />
-                </Box>
-              ))}
-            </Slider>
+
+          <Card sx={{ background: whiteCardGradient, p: 3 }}>
+            <Suspense fallback={<Box sx={{ height: 120 }} />}>
+              <Slider {...sponsorSettings}>
+                {sponsors.map((s) => (
+                  <Box key={s.name} sx={{ display: "flex", justifyContent: "center" }}>
+                    <Box
+                      component="img"
+                      src={s.logo}
+                      alt={s.name}
+                      loading="lazy"
+                      decoding="async"
+                      width={160}
+                      height={80}
+                      sx={{ objectFit: "contain" }}
+                    />
+                  </Box>
+                ))}
+              </Slider>
+            </Suspense>
           </Card>
         </Container>
       </section>
 
-      {/* Call to Action */}
-      <section className="py-2 text-center mx-4 mt-10">
+      {/* CTA */}
+      <section className="mx-4 text-center">
         <Container maxWidth="md">
-          <Card
-            sx={{
-              background: whiteCardGradient,
-              borderRadius: 2,
-              padding: 4,
-              boxShadow: 3,
-            }}
-          >
-            <Typography
-              variant="h5"
-              className="text-[#fea434] font-bold tracking-wide mb-4"
-            >
+          <Card sx={{ background: whiteCardGradient, p: 4 }}>
+            <Typography sx={{ color: "#fea434", fontWeight: 700, mb: 2 }} variant="h5">
               Ready to make a difference?
             </Typography>
-            <Typography
-              variant="body1"
-              className="text-gray-700 text-lg leading-relaxed mb-4 px-2 md:px-6"
-            >
-              Join our mission and help empower the next generation.
+
+            <Typography sx={{ mb: 3 }}>
+              Join our mission and empower the next generation.
             </Typography>
-            <a href="/contact">
-              <button className="mt-4 px-6 py-3 rounded-full bg-[#fea434] text-white font-semibold hover:bg-[#e69420] transition duration-300 shadow-md">
+
+            <Link to="/contact">
+              <button className="px-6 py-3 rounded-full bg-[#fea434] text-white font-semibold hover:bg-[#e69420] transition">
                 Contact Us
               </button>
-            </a>
+            </Link>
           </Card>
         </Container>
       </section>
 
-      <Footer />
-    </div>
+      <Suspense fallback={null}>
+    
+      </Suspense>
+    </Box>
   );
-};
+});
+About.displayName = "About";
 
 export default About;
