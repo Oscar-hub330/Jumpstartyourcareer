@@ -1,3 +1,4 @@
+/* eslint-disable react/prop-types */
 // src/components/SplashScreen.jsx
 import React, { useEffect, useState } from "react";
 import { CircularProgress } from "@mui/material";
@@ -33,7 +34,7 @@ const SplashScreen = ({ onFinish }) => {
         className="w-32 h-32 animate-bounce"
       />
       <h1 className="text-2xl mt-6 font-semibold" style={{ color: "#fea434" }}>
-        Welcome to Jumpstart
+        Welcome to Jumpstart Your Career
       </h1>
       <div className="mt-6">
         <CircularProgress style={{ color: "#fea434" }} />

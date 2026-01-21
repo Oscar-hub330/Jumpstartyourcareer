@@ -16,9 +16,10 @@ const FAQs = lazy(() => import("./pages/FAQs"));
 const Contact = lazy(() => import("./pages/Contact"));
 const Testimonials = lazy(() => import("./pages/Testimonials"));
 const AdminLogin = lazy(() => import("./pages/AdminLogin"));
-const AdminPanel = lazy(() => import("./pages/AdminPanel"));
+const AdminPage = lazy(() => import("./pages/admin/AdminPage"));
 const ImageCarousel = lazy(() => import("./components/ImageCarousel"));
 import BlogDetail from "./pages/BlogDetail";
+
 
 function App() {
   const [showSplash, setShowSplash] = useState(true);
@@ -51,7 +52,17 @@ function App() {
             path="/admin"
             element={
               localStorage.getItem("isAdmin") === "true" ? (
-                <AdminPanel />
+                <AdminPage/>
+              ) : (
+                <Navigate to="/admin-login" />
+              )
+            }
+          />
+          <Route
+            path="/admin/news-events"
+            element={
+              localStorage.getItem("isAdmin") === "true" ? (
+                <AdminPage/>
               ) : (
                 <Navigate to="/admin-login" />
               )
