@@ -1,3 +1,4 @@
+/* eslint-disable react/prop-types */
 // src/components/admin/BlogManager.jsx
 import React, { useEffect, useState } from "react";
 import axios from "axios";

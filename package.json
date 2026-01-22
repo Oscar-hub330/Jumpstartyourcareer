@@ -31,7 +31,7 @@
     "mongodb": "^6.17.0",
     "multer": "^2.0.1",
     "nodemailer": "^7.0.5",
-    "pdfjs-dist": "^5.3.93",
+    "pdfjs-dist": "^5.4.530",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-intersection-observer": "^10.0.2",

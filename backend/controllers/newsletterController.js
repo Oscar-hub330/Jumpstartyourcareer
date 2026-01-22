@@ -1,6 +1,11 @@
 import Newsletter from "../models/Newsletter.js";
 import fs from "fs";
 import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const uploadsDir = path.join(__dirname, "../uploads");
 
 // Async helper to delete a file without blocking
 const unlinkFile = (filePath) => {
@@ -15,17 +20,19 @@ const unlinkFile = (filePath) => {
   });
 };
 
-// 📌 Create newsletter (PDF optional now)
+// 📌 Create newsletter (PDF or image required)
 const createNewsletter = async (req, res) => {
   try {
     const imageFile = req.files?.image?.[0];
     const pdfFile = req.files?.pdf?.[0];
-
-    const { title, description, author } = req.body;
+    const { title, description, author, pdfText = '', imagePosition = 'top' } = req.body;
 
     // Validate required fields
     if (!title || !description) {
       return res.status(400).json({ error: "Title and description are required." });
+    }
+    if (!imageFile && !pdfFile) {
+      return res.status(400).json({ error: "Either image or PDF is required." });
     }
 
     const newsletter = new Newsletter({
@@ -34,6 +41,8 @@ const createNewsletter = async (req, res) => {
       author: author || "Admin",
       image: imageFile ? imageFile.filename : null,
       pdf: pdfFile ? pdfFile.filename : null,
+      pdfText: pdfText || '',
+      imagePosition: imagePosition || 'top',
       published: true,
     });
 
@@ -78,8 +87,8 @@ const deleteNewsletter = async (req, res) => {
       return res.status(404).json({ error: "Newsletter not found." });
     }
 
-    const imagePath = newsletter.image ? path.resolve("public/uploads", newsletter.image) : null;
-    const pdfPath = newsletter.pdf ? path.resolve("public/uploads", newsletter.pdf) : null;
+    const imagePath = newsletter.image ? path.join(uploadsDir, newsletter.image) : null;
+    const pdfPath = newsletter.pdf ? path.join(uploadsDir, newsletter.pdf) : null;
 
     // Delete files asynchronously but don't block response on failure
     if (imagePath && fs.existsSync(imagePath)) {
@@ -106,29 +115,47 @@ const updateNewsletter = async (req, res) => {
       return res.status(404).json({ error: "Newsletter not found." });
     }
 
-    const { title, description, author } = req.body;
+    const { title, description, author, pdfText = '', imagePosition = 'top' } = req.body;
     if (!title || !description) {
       return res.status(400).json({ error: "Title and description are required." });
+    }
+
+    const imageFile = req.files?.image?.[0];
+    const pdfFile = req.files?.pdf?.[0];
+
+    // At least one must be present after update
+    if (!imageFile && !pdfFile && !newsletter.image && !newsletter.pdf) {
+      return res.status(400).json({ error: "Either image or PDF is required." });
     }
 
     newsletter.title = title;
     newsletter.description = description;
     newsletter.author = author || newsletter.author;
+    newsletter.imagePosition = imagePosition || newsletter.imagePosition;
+    newsletter.pdfText = pdfText || newsletter.pdfText;
 
-    const imageFile = req.files?.image?.[0];
     if (imageFile) {
       if (newsletter.image) {
-        await unlinkFile(path.resolve("public/uploads", newsletter.image));
+        await unlinkFile(path.join(uploadsDir, newsletter.image));
       }
       newsletter.image = imageFile.filename;
+      // If new image, remove pdf
+      if (newsletter.pdf) {
+        await unlinkFile(path.join(uploadsDir, newsletter.pdf));
+        newsletter.pdf = null;
+        newsletter.pdfText = '';
+      }
     }
-
-    const pdfFile = req.files?.pdf?.[0];
     if (pdfFile) {
       if (newsletter.pdf) {
-        await unlinkFile(path.resolve("public/uploads", newsletter.pdf));
+        await unlinkFile(path.join(uploadsDir, newsletter.pdf));
       }
       newsletter.pdf = pdfFile.filename;
+      // If new pdf, remove image
+      if (newsletter.image) {
+        await unlinkFile(path.join(uploadsDir, newsletter.image));
+        newsletter.image = null;
+      }
     }
 
     const updated = await newsletter.save();

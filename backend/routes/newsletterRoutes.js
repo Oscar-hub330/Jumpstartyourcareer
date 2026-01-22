@@ -36,14 +36,20 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
-const upload = multer({ storage, fileFilter });
+const upload = multer({ 
+  storage, 
+  fileFilter,
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB max for any file
+  },
+});
 
 // 📨 Create newsletter (image + pdf)
 router.post(
   "/",
   upload.fields([
-    { name: "image", maxCount: 1 },
-    { name: "pdf", maxCount: 1 },
+    { name: "image", maxCount: 1, limits: { fileSize: 2 * 1024 * 1024 } }, // 2MB max for image
+    { name: "pdf", maxCount: 1, limits: { fileSize: 10 * 1024 * 1024 } }, // 10MB max for pdf
   ]),
   createNewsletter
 );
@@ -52,8 +58,8 @@ router.post(
 router.put(
   "/:id",
   upload.fields([
-    { name: "image", maxCount: 1 },
-    { name: "pdf", maxCount: 1 },
+    { name: "image", maxCount: 1, limits: { fileSize: 2 * 1024 * 1024 } }, // 2MB max for image
+    { name: "pdf", maxCount: 1, limits: { fileSize: 10 * 1024 * 1024 } }, // 10MB max for pdf
   ]),
   updateNewsletter
 );

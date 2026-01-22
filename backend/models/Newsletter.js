@@ -12,7 +12,7 @@ const NewsletterSchema = new mongoose.Schema(
     description: {
       type: String,
       trim: true,
-      default: "", // Consider making it required or at least non-null
+      default: "",
       maxlength: [2000, "Description too long"],
     },
     author: {
@@ -21,18 +21,26 @@ const NewsletterSchema = new mongoose.Schema(
       trim: true,
     },
     image: {
-      type: String, // filename or relative path
+      type: String,
       default: null,
     },
     pdf: {
       type: String,
-      required: [true, "PDF file is required"],
+      default: null,
+    },
+    pdfText: {
+      type: String,
+      default: "",
+    },
+    imagePosition: {
+      type: String,
+      enum: ["top", "middle", "bottom"],
+      default: "top",
     },
     published: {
       type: Boolean,
       default: true,
     },
-    // Optional slug for better URLs, indexing, or SEO
     slug: {
       type: String,
       unique: true,
@@ -44,7 +52,14 @@ const NewsletterSchema = new mongoose.Schema(
   }
 );
 
-// Optional: You can add pre-save hook to generate slug from title if desired
+// Custom validation: at least one of image or pdf must be present
+NewsletterSchema.pre("validate", function (next) {
+  if (!this.image && !this.pdf) {
+    this.invalidate("image", "Either image or PDF is required.");
+    this.invalidate("pdf", "Either image or PDF is required.");
+  }
+  next();
+});
 
 const Newsletter = mongoose.model("Newsletter", NewsletterSchema);
 
