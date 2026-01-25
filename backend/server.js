@@ -14,12 +14,12 @@ import newsletterRoutes from "./routes/newsletterRoutes.js";
 import blogRoutes from "./routes/blogRoutes.js";
 import { notFound, errorHandler } from "./middleware/errorHandler.js";
 
+
 /* =====================
    APP INIT
 ===================== */
 const app = express();
 app.use(cors());
-app.use(express.json());
 
 /* =====================
    DIRNAME FIX (ESM)
@@ -54,8 +54,14 @@ if (!fs.existsSync(uploadDir)) {
 /* =====================
    ROUTES
 ===================== */
-app.use("/api/subscribe", subscriberRoutes);
+// File upload routes (multer handles multipart/form-data)
 app.use("/api/newsletters", newsletterRoutes);
+
+// JSON body parser for other routes
+app.use(express.json());
+
+// Other routes
+app.use("/api/subscribe", subscriberRoutes);
 app.use("/api/blogs", blogRoutes);
 
 /* =====================

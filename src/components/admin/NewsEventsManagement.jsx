@@ -19,7 +19,8 @@ import CloseIcon from "@mui/icons-material/Close";
 import axios from "axios";
 import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf";
 
-const API_URL = "http://localhost:4000/api/newsletters";
+const API_URL = "/api/newsletters";
+
 const ACCENT = "#fea434";
 
 const modalStyle = {
