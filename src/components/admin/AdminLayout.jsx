@@ -54,6 +54,13 @@ const AdminLayout = ({ children }) => {
             to="/admin/news-events"
             sx={{ color: ACCENT, fontWeight: 600 }}
           />
+          <Tab
+            label="Contact Messages"
+            component={Link}
+            to="/admin/contact-messages"
+            sx={{ color: ACCENT, fontWeight: 600 }}
+          />
+
         </Tabs>
       </Box>
 
@@ -69,7 +76,6 @@ const AdminLayout = ({ children }) => {
         fontSize={12}
         color="text.secondary"
       >
-        © 2026 Admin Portal. All rights reserved.
       </Box>
     </Box>
   );

@@ -5,6 +5,7 @@ import { Box, Tabs, Tab } from "@mui/material";
 // ✅ Correct relative paths
 import BlogManager from "../../components/admin/BlogManager";
 import NewsEventsManagement from "../../components/admin/NewsEventsManagement";
+import ContactAdmin from "../../components/admin/ContactAdmin";
 
 const AdminPage = () => {
   const [tab, setTab] = useState(0);
@@ -25,12 +26,14 @@ const AdminPage = () => {
         >
           <Tab label="Blog Manager" />
           <Tab label="News & Events" />
+          <Tab label="Contact Messages" />
         </Tabs>
       </Box>
 
       <Box sx={{ p: 4 }}>
         {tab === 0 && <BlogManager />}
         {tab === 1 && <NewsEventsManagement />}
+        {tab === 2 && <ContactAdmin />}
       </Box>
     </Box>
   );

@@ -1,5 +1,5 @@
 /* eslint-disable no-unused-vars */
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Box,
   Typography,
@@ -8,233 +8,296 @@ import {
   CardMedia,
   Button,
   Modal,
-  CircularProgress,
   Avatar,
-  Chip,
+  TextField,
+  Pagination,
+  IconButton,
+  Stack,
+  Divider,
+  InputAdornment,
 } from "@mui/material";
-import PersonIcon from "@mui/icons-material/Person";
-import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
+
+import SearchIcon from "@mui/icons-material/Search";
+import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
 import DownloadIcon from "@mui/icons-material/Download";
 import CloseIcon from "@mui/icons-material/Close";
-import ArticleIcon from "@mui/icons-material/Article";
+import ShareIcon from "@mui/icons-material/Share";
+import WhatsAppIcon from "@mui/icons-material/WhatsApp";
+import FacebookIcon from "@mui/icons-material/Facebook";
+import LinkedInIcon from "@mui/icons-material/LinkedIn";
+
 import axios from "axios";
 import Footer from "../components/Footer";
 
 const ACCENT = "#fea434";
+const ITEMS_PER_PAGE = 6;
 
-const modalStyle = {
-  position: "absolute",
-  top: "50%",
-  left: "50%",
-  transform: "translate(-50%, -50%)",
-  bgcolor: "background.paper",
-  borderRadius: 2,
-  boxShadow: 24,
-  p: 4,
-  maxWidth: 700,
-  width: "90%",
-  maxHeight: "90vh",
-  overflowY: "auto",
-};
-
-const NewsEvents = () => {
+export default function NewsEvents() {
   const [newsletters, setNewsletters] = useState([]);
-  const [selectedNewsletter, setSelectedNewsletter] = useState(null);
+  const [pdfs, setPdfs] = useState([]);
+  const [selected, setSelected] = useState(null);
   const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
 
+  /* ================= FETCH ================= */
   useEffect(() => {
-    const fetchNewsletters = async () => {
+    const fetch = async () => {
       try {
         const res = await axios.get("http://localhost:4000/api/newsletters");
-        const list = Array.isArray(res.data)
-          ? res.data
-          : res.data?.data || res.data?.newsletters || [];
-        setNewsletters(list);
+        const allData = res.data || [];
+        setNewsletters(allData.filter((n) => !n.pdf));
+        setPdfs(allData.filter((n) => n.pdf));
       } catch (error) {
         console.error("Failed to fetch newsletters:", error);
         setNewsletters([]);
-      } finally {
-        setLoading(false);
+        setPdfs([]);
       }
     };
-    fetchNewsletters();
+    fetch();
   }, []);
 
-  const handleOpen = (newsletter) => {
-    setSelectedNewsletter(newsletter);
-    setOpen(true);
-  };
+  /* ================= FILTER ================= */
+  const filtered = useMemo(() => {
+    return newsletters.filter((n) =>
+      `${n.title} ${n.description}`.toLowerCase().includes(search.toLowerCase())
+    );
+  }, [newsletters, search]);
 
-  const handleClose = () => {
-    setOpen(false);
-    setSelectedNewsletter(null);
-  };
+  const paginated = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
 
-  const formatDate = (dateString) =>
-    dateString
-      ? new Date(dateString).toLocaleDateString("en-US", {
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-        })
-      : "—";
+  const formatDate = (d) => new Date(d).toLocaleDateString();
+
+  const shareNewsletter = (nl) => {
+    const url = window.location.href;
+    if (navigator.share) {
+      navigator.share({ title: nl.title, text: nl.description, url });
+      return;
+    }
+    window.open(
+      `https://wa.me/?text=${encodeURIComponent(nl.title + " " + url)}`
+    );
+  };
 
   return (
-    <Box sx={{ minHeight: "50vh", backgroundColor: "#fff7ed" }}>
-      {/* Hero */}
+    <Box sx={{ bgcolor: "#fff7ed", minHeight: "100vh" }}>
+      {/* HERO */}
       <Box
         sx={{
-          py: 7,
+          py: 6,
           textAlign: "center",
-          color: "#fff",
           background: `linear-gradient(135deg, ${ACCENT}, #ffb84d)`,
+          color: "#fff",
         }}
       >
-        <Typography
-          variant="h6"
-          sx={{ mb: 1, display: "inline-flex", alignItems: "center", gap: 1 }}
-        >
-          <ArticleIcon fontSize="small" /> Publications
-        </Typography>
-        <Typography variant="h4" sx={{ fontWeight: "bold", mb: 2 }}>
-          Newsletter Archive
-        </Typography>
-        <Typography variant="body1" sx={{ maxWidth: 600, mx: "auto" }}>
-          Stay informed with our latest organizational updates and publications.
+        <Typography fontSize={26} fontWeight={600}>
+          Newsletter & Event Archive
         </Typography>
       </Box>
 
-      {/* List */}
-      <Box sx={{ maxWidth: 1000, mx: "auto", py: 0, px: 2 }}>
-        {loading ? (
-          <Box sx={{ display: "flex", justifyContent: "center", py: 20 }}>
-            <CircularProgress sx={{ color: ACCENT }} />
-          </Box>
-        ) : newsletters.length === 0 ? (
-          <Box sx={{ textAlign: "center", py: 20 }}>
-            <ArticleIcon sx={{ fontSize: 60, mb: 2, color: ACCENT }} />
-            <Typography variant="h6">No newsletters available</Typography>
-            <Typography>Check back later.</Typography>
-          </Box>
-        ) : (
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            {newsletters.map((nl) => (
+      {/* SEARCH */}
+      <Box sx={{ maxWidth: 1200, mx: "auto", p: 3 }}>
+        <TextField
+          fullWidth
+          size="small"
+          placeholder="Search newsletters..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon sx={{ color: "#aaa" }} />
+              </InputAdornment>
+            ),
+          }}
+        />
+      </Box>
+
+      {/* NEWSLETTER GRID */}
+      <Box sx={{ maxWidth: 1200, mx: "auto", px: 3, pb: 6 }}>
+        <Typography fontSize={20} fontWeight={600} sx={{ mb: 2 }}>
+          Newsletters & Events
+        </Typography>
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr", md: "1fr 1fr 1fr" },
+            gap: 3,
+          }}
+        >
+          {paginated.map((nl) => (
+            <Card key={nl._id} sx={{ borderRadius: 3, display: "flex", flexDirection: "column", height: "100%" }}>
+              <CardMedia
+                component="img"
+                loading="lazy"
+                image={`http://localhost:4000/uploads/${nl.image}`}
+                sx={{ height: 160, objectFit: "cover" }}
+              />
+              <CardContent sx={{ flex: 1 }}>
+                <Typography fontSize={16} fontWeight={600}>
+                  {nl.title}
+                </Typography>
+                <Typography fontSize={13} sx={{ mt: 1, color: "#555" }}>
+                  {nl.description?.slice(0, 100)}...
+                </Typography>
+
+                <Stack direction="row" spacing={1} sx={{ mt: 2, alignItems: "center" }}>
+                  <Avatar sx={{ width: 24, height: 24 }}>{(nl.author || "A")[0]}</Avatar>
+                  <Typography fontSize={12}>{formatDate(nl.createdAt)}</Typography>
+                </Stack>
+
+                <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
+                  <Button
+                    fullWidth
+                    size="small"
+                    variant="contained"
+                    sx={{ bgcolor: ACCENT }}
+                    onClick={() => { setSelected(nl); setOpen(true); }}
+                  >
+                    View
+                  </Button>
+                  <IconButton onClick={() => shareNewsletter(nl)}>
+                    <ShareIcon />
+                  </IconButton>
+                </Stack>
+              </CardContent>
+            </Card>
+          ))}
+        </Box>
+
+        {/* PAGINATION */}
+        <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
+          <Pagination count={totalPages} page={page} onChange={(_, v) => setPage(v)} />
+        </Box>
+      </Box>
+
+      {/* PDF GRID (Visually distinct) */}
+      {pdfs.length > 0 && (
+        <Box sx={{ maxWidth: 1200, mx: "auto", px: 3, pb: 6 }}>
+          <Typography fontSize={20} fontWeight={600} sx={{ mb: 2 }}>
+            PDF Downloads
+          </Typography>
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr", md: "1fr 1fr 1fr" },
+              gap: 3,
+            }}
+          >
+            {pdfs.map((pdf) => (
               <Card
-                key={nl._id}
+                key={pdf._id}
                 sx={{
+                  borderRadius: 3,
                   display: "flex",
-                  overflow: "hidden",
-                  borderRadius: 2,
-                  boxShadow: 3,
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  p: 3,
+                  height: 200,
+                  bgcolor: "#f2f2f2",
+                  textAlign: "center",
+                  "&:hover": { boxShadow: 6 },
                 }}
               >
-                {nl.image && (
-                  <CardMedia
-                    component="img"
-                    sx={{ width: 250, objectFit: "cover" }}
-                    image={`http://localhost:4000/uploads/${nl.image}`}
-                    alt={nl.title}
-                  />
-                )}
-                <CardContent sx={{ flex: 1 }}>
-                  <Box
-                    sx={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "start",
-                    }}
-                  >
-                    <Typography variant="h6" sx={{ mb: 1, fontWeight: "bold" }}>
-                      {nl.title}
-                    </Typography>
-                    {nl.pdf && <Chip label="PDF" sx={{ borderColor: ACCENT, color: ACCENT }} />}
-                  </Box>
-                  <Typography variant="body2" sx={{ mb: 2 }}>
-                    {nl.description ? `${nl.description.slice(0, 120)}...` : "No description available."}
-                  </Typography>
-                  <Box sx={{ display: "flex", gap: 2, alignItems: "center", mb: 2 }}>
-                    <Avatar sx={{ width: 24, height: 24 }}>{(nl.author || "A")[0]}</Avatar>
-                    <Typography variant="caption">
-                      {nl.author || "Admin"} • {formatDate(nl.createdAt)}
-                    </Typography>
-                  </Box>
-                  <Box sx={{ display: "flex", gap: 2 }}>
-                    <Button
-                      variant="contained"
-                      sx={{ backgroundColor: ACCENT }}
-                      onClick={() => handleOpen(nl)}
-                    >
-                      Read More
-                    </Button>
-                    {nl.pdf && (
-                      <Button
-                        variant="outlined"
-                        startIcon={<DownloadIcon />}
-                        sx={{ borderColor: ACCENT, color: ACCENT }}
-                        href={`http://localhost:4000/uploads/${nl.pdf}`}
-                        download
-                      >
-                        Download PDF
-                      </Button>
-                    )}
-                  </Box>
-                </CardContent>
+                <PictureAsPdfIcon sx={{ fontSize: 60, color: ACCENT, mb: 1 }} />
+                <Typography fontSize={15} fontWeight={600} sx={{ mb: 1 }}>
+                  {pdf.title}
+                </Typography>
+                <Typography fontSize={12} sx={{ color: "#555", mb: 2 }}>
+                  {pdf.description?.slice(0, 60)}...
+                </Typography>
+                <Button
+                  variant="contained"
+                  size="small"
+                  sx={{ bgcolor: ACCENT }}
+                  href={`http://localhost:4000/uploads/${pdf.pdf}`}
+                  target="_blank"
+                >
+                  Open PDF
+                </Button>
+                <IconButton onClick={() => shareNewsletter(pdf)}>
+                  <ShareIcon />
+                </IconButton>
               </Card>
             ))}
           </Box>
-        )}
-      </Box>
+        </Box>
+      )}
 
-      {/* Modal */}
-      <Modal open={open} onClose={handleClose}>
-        <Box sx={modalStyle}>
-          {selectedNewsletter?.image && (
-            <img
-              src={`http://localhost:4000/uploads/${selectedNewsletter.image}`}
-              alt=""
-              style={{ width: "100%", borderRadius: 8, marginBottom: 16 }}
-            />
+      {/* MODAL FOR NEWSLETTERS */}
+      <Modal open={open} onClose={() => setOpen(false)}>
+        <Box
+          sx={{
+            width: { xs: "95%", md: 780 },
+            height: "88vh",
+            bgcolor: "#fff",
+            borderRadius: 3,
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            display: "flex",
+            flexDirection: "column",
+            boxShadow: 24,
+            overflow: "hidden",
+          }}
+        >
+          {selected?.image && (
+            <Box sx={{ width: "100%", aspectRatio: "16/7", maxHeight: 160, overflow: "hidden", bgcolor: "#f6f6f6" }}>
+              <img
+                src={`http://localhost:4000/uploads/${selected.image}`}
+                alt=""
+                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+              />
+            </Box>
           )}
-          <Typography variant="h5" sx={{ fontWeight: "bold", mb: 1, color: ACCENT }}>
-            {selectedNewsletter?.title}
-          </Typography>
-          <Typography variant="body2" sx={{ mb: 2 }}>
-            By {selectedNewsletter?.author || "Admin"} • {formatDate(selectedNewsletter?.createdAt)}
-          </Typography>
-          <Typography variant="body1" sx={{ mb: 2 }}>
-            {selectedNewsletter?.description}
-          </Typography>
-          {selectedNewsletter?.pdf && (
-            <iframe
-              src={`http://localhost:4000/uploads/${selectedNewsletter.pdf}`}
-              title="Newsletter PDF"
-              style={{ width: "100%", height: 500, border: "1px solid #ccc", borderRadius: 8, marginBottom: 16 }}
-            />
-          )}
-          <Box sx={{ display: "flex", gap: 2 }}>
-            {selectedNewsletter?.pdf && (
-              <Button
-                variant="contained"
-                startIcon={<DownloadIcon />}
-                sx={{ backgroundColor: ACCENT }}
-                href={`http://localhost:4000/uploads/${selectedNewsletter.pdf}`}
-                download
-              >
-                Download PDF
-              </Button>
-            )}
-            <Button variant="outlined" onClick={handleClose} sx={{ borderColor: ACCENT, color: ACCENT }}>
-              <CloseIcon sx={{ fontSize: 18, mr: 1 }} />
-              Close
-            </Button>
+
+          <Box sx={{ flex: 1, overflowY: "auto", p: 3 }}>
+            <Typography sx={{ fontSize: 17, fontWeight: 600, mb: 1 }}>{selected?.title}</Typography>
+            <Typography sx={{ fontSize: 13.5, lineHeight: 1.75, color: "#444", whiteSpace: "pre-line" }}>
+              {selected?.description}
+            </Typography>
           </Box>
+
+          <Divider />
+
+          <Stack direction="row" spacing={1} sx={{ p: 1.5, justifyContent: "space-between", alignItems: "center", bgcolor: "#fafafa" }}>
+            <Stack direction="row" spacing={1}>
+              <IconButton href={`https://wa.me/?text=${encodeURIComponent(selected?.title + " " + window.location.href)}`}>
+                <WhatsAppIcon />
+              </IconButton>
+              <IconButton href={`https://www.facebook.com/sharer/sharer.php?u=${window.location.href}`}>
+                <FacebookIcon />
+              </IconButton>
+              <IconButton href={`https://www.linkedin.com/sharing/share-offsite/?url=${window.location.href}`}>
+                <LinkedInIcon />
+              </IconButton>
+            </Stack>
+
+            <Stack direction="row" spacing={1}>
+              {selected?.pdf && (
+                <Button
+                  variant="contained"
+                  size="small"
+                  startIcon={<DownloadIcon />}
+                  sx={{ bgcolor: ACCENT }}
+                  href={`http://localhost:4000/uploads/${selected.pdf}`}
+                  target="_blank"
+                >
+                  Open PDF
+                </Button>
+              )}
+              <Button size="small" startIcon={<CloseIcon />} onClick={() => setOpen(false)}>
+                Close
+              </Button>
+            </Stack>
+          </Stack>
         </Box>
       </Modal>
 
       <Footer />
     </Box>
   );
-};
-
-export default NewsEvents;
+}

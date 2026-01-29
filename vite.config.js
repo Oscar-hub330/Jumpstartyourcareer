@@ -64,6 +64,7 @@ export default defineConfig({
     proxy: {
       '/api': 'http://localhost:4000',
       '/newsletter': 'http://localhost:4000',
+      
     },
   },
   

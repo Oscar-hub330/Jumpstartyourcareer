@@ -1,4 +1,7 @@
-import React from "react";
+/* eslint-disable no-unused-vars */
+import React, { useState } from "react";
+import axios from "axios";
+
 import {
   Box,
   Container,
@@ -7,7 +10,11 @@ import {
   Button,
   Link,
   Divider,
+  Stack,
+  Alert,
+  CircularProgress,
 } from "@mui/material";
+
 import {
   PhoneInTalk,
   EmailOutlined,
@@ -17,222 +24,222 @@ import {
   Instagram,
 } from "@mui/icons-material";
 
-const Contact = () => {
+const ACCENT = "#fea434";
+
+export default function Contact() {
+  /* ================= STATE ================= */
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    subject: "",
+    message: "",
+  });
+
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState("");
+  const [error, setError] = useState("");
+
+  /* ================= HANDLERS ================= */
+  const handleChange = (e) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    setSuccess("");
+    setError("");
+
+    /* -------- simple validation -------- */
+    if (!form.name || !form.email || !form.subject || !form.message) {
+      setError("Please fill in all fields.");
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      await axios.post("http://localhost:4000/api/contact", form);
+
+      setSuccess("Message sent successfully ✓");
+
+      setForm({
+        name: "",
+        email: "",
+        subject: "",
+        message: "",
+      });
+    } catch (err) {
+      setError("Failed to send message. Try again later.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /* ================= CONTACT INFO ================= */
   const contactDetails = [
     {
-      icon: <PhoneInTalk sx={{ fontSize: 24, color: "#fea434" }} />,
+      icon: <PhoneInTalk sx={{ color: ACCENT }} />,
       label: "Phone",
       value: "+27 63 964 7736",
     },
     {
-      icon: <EmailOutlined sx={{ fontSize: 24, color: "#fea434" }} />,
+      icon: <EmailOutlined sx={{ color: ACCENT }} />,
       label: "Email",
       value: "info@jumpstartyourcareer.org.za",
     },
     {
-      icon: <LocationOn sx={{ fontSize: 24, color: "#fea434" }} />,
+      icon: <LocationOn sx={{ color: ACCENT }} />,
       label: "Address",
       value: "01 Bafana Bafana Road, Mbombela, South Africa",
     },
   ];
 
-  const socialIcons = [Facebook, Twitter, Instagram];
+  const socialIcons = [
+    { Icon: Facebook, url: "https://facebook.com" },
+    { Icon: Twitter, url: "https://twitter.com" },
+    { Icon: Instagram, url: "https://instagram.com" },
+  ];
 
+  /* ================= UI ================= */
   return (
     <Box
       sx={{
-        minHeight: "70vh",
-        backgroundColor: "#fef7f0",
-        py: { xs: 4, md: 6 },
-        px: { xs: 2, md: 0 },
+        minHeight: "100vh",
+        bgcolor: "#fff7ed",
         display: "flex",
         alignItems: "center",
-        fontFamily: "'Inter', sans-serif",
+        py: 6,
       }}
     >
       <Container
         maxWidth="md"
         sx={{
-          display: "flex",
-          flexDirection: { xs: "column", md: "row" },
-          gap: { xs: 4, md: 6 },
+          display: "grid",
+          gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
+          gap: 4,
         }}
       >
-        {/* Left Contact Info */}
-        <Box
-          sx={{
-            flex: 1,
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-            gap: 3,
-            textAlign: { xs: "center", md: "left" },
-          }}
-        >
-          <Typography
-            variant="h5"
-            sx={{
-              fontWeight: 700,
-              color: "#fea434",
-              textTransform: "uppercase",
-              letterSpacing: 1.2,
-            }}
-          >
-            Contact Jumpstart
+        {/* ================= LEFT INFO ================= */}
+        <Box display="flex" flexDirection="column" gap={3}>
+          <Typography fontSize={24} fontWeight={700} color={ACCENT}>
+            Contact Us
           </Typography>
 
-          {contactDetails.map(({ icon, label, value }, i) => (
-            <Box
-              key={i}
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                gap: 1.5,
-                py: 0.5,
-              }}
-            >
-              {icon}
+          {contactDetails.map((item, i) => (
+            <Stack key={i} direction="row" spacing={2} alignItems="center">
+              {item.icon}
               <Box>
-                <Typography
-                  variant="subtitle2"
-                  sx={{
-                    fontWeight: 600,
-                    textTransform: "uppercase",
-                    fontSize: 11,
-                    color: "#555",
-                  }}
-                >
-                  {label}
+                <Typography fontSize={12} fontWeight={600} color="#666">
+                  {item.label}
                 </Typography>
-                <Typography variant="body2" sx={{ fontWeight: 500, color: "#222" }}>
-                  {value}
-                </Typography>
+                <Typography fontSize={14}>{item.value}</Typography>
               </Box>
-            </Box>
+            </Stack>
           ))}
 
-          <Divider sx={{ my: 1.5, borderColor: "#ffd89b" }} />
+          <Divider />
 
-          <Box
-            sx={{
-              display: "flex",
-              gap: 2.5,
-              justifyContent: { xs: "center", md: "flex-start" },
-            }}
-          >
-            {socialIcons.map((Icon, i) => (
-              <Link
-                href="https://www.facebook.com/JumpstartYourCareer"
-                key={i}
-                target="_blank"
-                rel="noopener noreferrer"
-                sx={{
-                  color: "#fea434",
-                  fontSize: 20,
-                  transition: "all 0.3s ease",
-                  "&:hover": {
-                    color: "#fff",
-                    backgroundColor: "#fea434",
-                    borderRadius: "50%",
-                    p: 0.5,
-                  },
-                }}
-              >
-                <Icon />
+          <Stack direction="row" spacing={2}>
+            {socialIcons.map(({ Icon, url }, i) => (
+              <Link key={i} href={url} target="_blank">
+                <Icon
+                  sx={{
+                    color: ACCENT,
+                    "&:hover": {
+                      transform: "scale(1.15)",
+                    },
+                  }}
+                />
               </Link>
             ))}
-          </Box>
+          </Stack>
         </Box>
 
-        {/* Right Contact Form */}
+        {/* ================= FORM ================= */}
         <Box
+          component="form"
+          onSubmit={handleSubmit}
           sx={{
-            flex: 1,
-            backgroundColor: "#fff",
+            bgcolor: "#fff",
             borderRadius: 3,
-            boxShadow: "0 4px 15px rgba(254, 164, 52, 0.12)",
-            p: { xs: 3, md: 4 },
+            p: 4,
+            boxShadow: "0 8px 25px rgba(0,0,0,0.06)",
+            display: "flex",
+            flexDirection: "column",
+            gap: 2,
           }}
         >
           <Typography
-            variant="h6"
-            sx={{
-              fontWeight: 700,
-              color: "#fea434",
-              mb: 3,
-              textAlign: "center",
-              textTransform: "uppercase",
-              letterSpacing: 1.2,
-            }}
+            fontSize={18}
+            fontWeight={700}
+            color={ACCENT}
+            textAlign="center"
           >
-            Send Us a Message
+            Send a Message
           </Typography>
 
-          <form>
-            {[
-              { label: "Full Name", type: "text", name: "name" },
-              { label: "Email Address", type: "email", name: "email" },
-              { label: "Subject", type: "text", name: "subject" },
-            ].map(({ label, type, name }, i) => (
-              <TextField
-                key={i}
-                label={label}
-                variant="outlined"
-                type={type}
-                name={name}
-                fullWidth
-                required
-                size="small"
-                sx={{
-                  mb: 2,
-                  "& .MuiOutlinedInput-root": { borderRadius: 2.5 },
-                  "& .MuiInputLabel-root": { fontWeight: 500 },
-                }}
-              />
-            ))}
+          {success && <Alert severity="success">{success}</Alert>}
+          {error && <Alert severity="error">{error}</Alert>}
 
-            <TextField
-              label="Message"
-              variant="outlined"
-              name="message"
-              multiline
-              rows={4}
-              fullWidth
-              required
-              size="small"
-              sx={{
-                mb: 3,
-                "& .MuiOutlinedInput-root": { borderRadius: 2.5 },
-                "& .MuiInputLabel-root": { fontWeight: 500 },
-              }}
-            />
+          <TextField
+            label="Full Name"
+            name="name"
+            size="small"
+            value={form.name}
+            onChange={handleChange}
+            fullWidth
+          />
 
-            <Button
-              type="submit"
-              variant="contained"
-              fullWidth
-              sx={{
-                backgroundColor: "#fea434",
-                color: "#fff",
-                fontWeight: 700,
-                letterSpacing: 1.2,
-                py: 1.2,
-                textTransform: "uppercase",
-                transition: "all 0.3s ease",
-                "&:hover": {
-                  backgroundColor: "#fff",
-                  color: "#fea434",
-                  border: "1px solid #fea434",
-                },
-              }}
-            >
-              Send Message
-            </Button>
-          </form>
+          <TextField
+            label="Email Address"
+            name="email"
+            type="email"
+            size="small"
+            value={form.email}
+            onChange={handleChange}
+            fullWidth
+          />
+
+          <TextField
+            label="Subject"
+            name="subject"
+            size="small"
+            value={form.subject}
+            onChange={handleChange}
+            fullWidth
+          />
+
+          <TextField
+            label="Message"
+            name="message"
+            multiline
+            rows={4}
+            size="small"
+            value={form.message}
+            onChange={handleChange}
+            fullWidth
+          />
+
+          <Button
+            type="submit"
+            variant="contained"
+            disabled={loading}
+            sx={{
+              bgcolor: ACCENT,
+              py: 1.2,
+              fontWeight: 600,
+              "&:hover": {
+                bgcolor: "#fff",
+                color: ACCENT,
+                border: `1px solid ${ACCENT}`,
+              },
+            }}
+          >
+            {loading ? <CircularProgress size={20} /> : "Send Message"}
+          </Button>
         </Box>
       </Container>
     </Box>
   );
-};
-
-export default Contact;
+}

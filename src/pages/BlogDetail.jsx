@@ -1,102 +1,163 @@
-// src/pages/BlogDetail.jsx
-
 import React, { useEffect, useState } from "react";
 import {
   Box,
   Typography,
-  Avatar,
-  Container,
-  Chip,
   CircularProgress,
+  Avatar,
+  Button,
+  Stack,
+  Divider,
 } from "@mui/material";
-import { useParams } from "react-router-dom";
+import ShareIcon from "@mui/icons-material/Share";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import moment from "moment";
 
-const BlogDetail = () => {
+const BlogDetails = () => {
   const { id } = useParams();
-  const [blog, setBlog] = useState(null);
+  const navigate = useNavigate();
+
+  const [post, setPost] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchBlog = async () => {
+    const fetchPost = async () => {
       try {
         const res = await axios.get(`http://localhost:4000/api/blogs/${id}`);
-        setBlog(res.data);
+        setPost(res.data);
       } catch (err) {
-        console.error("Failed to fetch blog:", err);
+        console.error(err);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchBlog();
+    fetchPost();
   }, [id]);
 
-  if (loading)
+  const sharePost = () => {
+    const url = window.location.href;
+
+    if (navigator.share) {
+      navigator.share({
+        title: post.title,
+        text: "Check out this blog post",
+        url,
+      });
+    } else {
+      navigator.clipboard.writeText(url);
+      alert("Link copied");
+    }
+  };
+
+  if (loading) {
     return (
-      <Box sx={{ display: "flex", justifyContent: "center", mt: 6 }}>
+      <Box display="flex" justifyContent="center" mt={10}>
         <CircularProgress sx={{ color: "#fea434" }} />
       </Box>
     );
+  }
 
-  if (!blog)
-    return (
-      <Typography variant="h2" color="error" align="center" sx={{ mt: 6 }}>
-        Blog not found.
-      </Typography>
-    );
+  if (!post) return null;
 
   return (
-    <Container maxWidth="md" sx={{ py: 4 }}>
+    <Box
+      sx={{
+        minHeight: "100vh",
+        backgroundColor: "#fff",
+        px: 2,
+        py: 6,
+      }}
+    >
+      {/* ================= Container (prevents stretching/overlap) ================= */}
       <Box
-        component="img"
-        src={`http://localhost:4000/uploads/${blog.image}`}
-        alt={blog.title}
-        sx={{ width: "100%", height: 400, objectFit: "cover", borderRadius: 2 }}
-      />
-      <Typography
-        variant="h3"
-        sx={{ color: "#fea434", mt: 2, fontWeight: 600 }}
+        sx={{
+          maxWidth: 850, // 🔑 critical for readability
+          mx: "auto",
+          display: "flex",
+          flexDirection: "column",
+          gap: 3,
+        }}
       >
-        {blog.title}
-      </Typography>
-      <Box sx={{ display: "flex", alignItems: "center", mt: 1, mb: 1 }}>
-        <Avatar sx={{ bgcolor: "#fea434", mr: 2 }}>
-          {(blog.author || "U")[0].toUpperCase()}
-        </Avatar>
-        <Box>
-          <Typography variant="subtitle2">{blog.author || "Unknown"}</Typography>
-          <Typography variant="caption" color="text.secondary">
-            {moment(blog.date || blog.createdAt).format("LL")}
+        {/* Back */}
+        <Button
+          startIcon={<ArrowBackIcon />}
+          onClick={() => navigate(-1)}
+          sx={{ alignSelf: "flex-start", textTransform: "none" }}
+        >
+          Back
+        </Button>
+
+        {/* Title */}
+        <Typography
+          variant="h4"
+          sx={{
+            fontWeight: 700,
+            lineHeight: 1.3,
+            color: "#fea434",
+            wordBreak: "break-word",
+          }}
+        >
+          {post.title}
+        </Typography>
+
+        {/* Author row */}
+        <Stack direction="row" alignItems="center" spacing={1}>
+          <Avatar sx={{ bgcolor: "#fea434", width: 32, height: 32 }}>
+            {(post.author || "A")[0]}
+          </Avatar>
+
+          <Typography fontSize="0.9rem">{post.author || "Unknown"}</Typography>
+
+          <Typography fontSize="0.8rem" color="#888">
+            {moment(post.createdAt).format("LL")}
           </Typography>
-        </Box>
+
+          <Button
+            size="small"
+            startIcon={<ShareIcon />}
+            onClick={sharePost}
+            sx={{ ml: "auto", textTransform: "none" }}
+          >
+            Share
+          </Button>
+        </Stack>
+
+        <Divider />
+
+        {/* ================= IMAGE BLOCK ================= */}
+        {post.image && (
+          <Box
+            component="img"
+            src={`http://localhost:4000/uploads/${post.image}`}
+            alt={post.title}
+            sx={{
+              width: "100%",
+              maxHeight: 420,
+              objectFit: "cover",
+              borderRadius: 2,
+              display: "block", // 🔑 prevents overlay
+            }}
+          />
+        )}
+
+        {/* ================= CONTENT ================= */}
+        <Typography
+          sx={{
+            fontSize: "1rem",
+            lineHeight: 1.8, // 🔑 prevents crowding
+            color: "#333",
+            whiteSpace: "pre-line",
+            wordBreak: "break-word",
+            overflowWrap: "anywhere",
+          }}
+        >
+          {post.content}
+        </Typography>
       </Box>
-
-      <Typography
-        variant="body1"
-        sx={{ fontSize: "1.0rem", lineHeight: 1.8, color: "#333", whiteSpace: "pre-line" }}
-      >
-        {blog.content}
-      </Typography>
-
-      {blog.tags?.length > 0 && (
-        <Box sx={{ mt: 2, display: "flex", flexWrap: "wrap", gap: 1 }}>
-          {blog.tags.map((tag, i) => (
-            <Chip
-              key={i}
-              label={`#${tag}`}
-              sx={{
-                backgroundColor: "#ffe2c0",
-                color: "#b85a00",
-                fontWeight: "bold",
-              }}
-            />
-          ))}
-        </Box>
-      )}
-    </Container>
+    </Box>
   );
 };
 
-export default BlogDetail;
+export default BlogDetails;

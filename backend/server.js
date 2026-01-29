@@ -13,6 +13,8 @@ import subscriberRoutes from "./routes/subscribers.js";
 import newsletterRoutes from "./routes/newsletterRoutes.js";
 import blogRoutes from "./routes/blogRoutes.js";
 import { notFound, errorHandler } from "./middleware/errorHandler.js";
+import contactRoutes from "./routes/contactRoutes.js";
+import adminContactRoutes from "./routes/adminContactRoutes.js";
 
 
 /* =====================
@@ -63,6 +65,9 @@ app.use(express.json());
 // Other routes
 app.use("/api/subscribe", subscriberRoutes);
 app.use("/api/blogs", blogRoutes);
+app.use("/api/contact", contactRoutes);
+app.use("/api/contact", contactRoutes);
+app.use("/api/admin/contact", adminContactRoutes);
 
 /* =====================
    STATIC FILES

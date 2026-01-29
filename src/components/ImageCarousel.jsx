@@ -14,7 +14,7 @@ import branding3 from "../assets/branding3.webp";
 
 const slides = [
   {
-    title: "Empowering rural youth and Women",
+    title: "Empowering Rural Youth and Women",
     subtitle: "Equipping future leaders through tech, training, and innovation.",
     description: "Jumpstart programs provide real-world opportunities and mentorship.",
     buttonText: "Learn More",

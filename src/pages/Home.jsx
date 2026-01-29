@@ -146,7 +146,7 @@ const Home = () => {
 
   const handleSubscribe = async () => {
   if (!email || !email.includes("@")) {
-    setStatus("❌ Please enter a valid email.");
+    setStatus("Please enter a valid email.");
     return;
   }
 

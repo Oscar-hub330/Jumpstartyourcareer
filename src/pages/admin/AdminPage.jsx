@@ -1,13 +1,26 @@
+/* eslint-disable no-unused-vars */
 // src/pages/AdminPanel.jsx
 import React from "react";
 import { Typography, Box } from "@mui/material";
 import BlogManager from "../../components/admin/BlogManager";
 import NewsEventsManagement from "../../components/admin/NewsEventsManagement";
+import ContactAdmin from "../../components/admin/ContactAdmin";
 import AdminLayout from "../../components/admin/AdminLayout";
 
 const AdminPanel = () => {
   const location = window.location.pathname;
-  const isNewsEvents = location.includes("news-events");
+
+  const getTitle = () => {
+    if (location.includes("news-events")) return "News & Events Management";
+    if (location.includes("contact")) return "Contact Admin";
+    return "Blog Manager";
+  };
+
+  const renderComponent = () => {
+    if (location.includes("news-events")) return <NewsEventsManagement hideTitle />;
+    if (location.includes("contact")) return <ContactAdmin />;
+    return <BlogManager />;
+  };
 
   return (
     <AdminLayout>
@@ -18,15 +31,11 @@ const AdminPanel = () => {
           fontWeight={700}
           sx={{ fontSize: { xs: 22, sm: 28 }, textAlign: { xs: 'center', sm: 'left' } }}
         >
-          {isNewsEvents ? "News & Events Management" : "Blog Manager"}
+          {getTitle()}
         </Typography>
       </Box>
       <Box mb={4} sx={{ width: '100%', maxWidth: 900, mx: 'auto' }}>
-        {isNewsEvents ? (
-          <NewsEventsManagement hideTitle />
-        ) : (
-          <BlogManager />
-        )}
+        {renderComponent()}
       </Box>
     </AdminLayout>
   );
