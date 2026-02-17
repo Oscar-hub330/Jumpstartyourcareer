@@ -1,9 +1,10 @@
+/* eslint-disable react/prop-types */
 import React, { useState, Suspense, lazy } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import SplashScreen from "./components/SplashScreen";
 
-// Lazy load all pages and some components
+/* ========= Lazy Pages ========= */
 const Home = lazy(() => import("./pages/Home"));
 const About = lazy(() => import("./pages/About"));
 const Projects = lazy(() => import("./pages/Projects"));
@@ -15,11 +16,26 @@ const Gallery = lazy(() => import("./pages/Gallery"));
 const FAQs = lazy(() => import("./pages/FAQs"));
 const Contact = lazy(() => import("./pages/Contact"));
 const Testimonials = lazy(() => import("./pages/Testimonials"));
+const BlogDetail = lazy(() => import("./pages/BlogDetail"));
 const AdminLogin = lazy(() => import("./pages/AdminLogin"));
-const AdminPage = lazy(() => import("./pages/admin/AdminPage"));
-const ImageCarousel = lazy(() => import("./components/ImageCarousel"));
-import BlogDetail from "./pages/BlogDetail";
 
+
+/* 🔥 ADMIN */
+const AdminLayout = lazy(() => import("./layouts/AdminLayout"));
+const BlogManager = lazy(() => import("./components/admin/BlogManager"));
+const NewsEventsManagement = lazy(() =>
+  import("./components/admin/NewsEventsManagement")
+);
+const ContactAdmin = lazy(() => import("./components/admin/ContactAdmin"));
+const SubscriberManagement = lazy(() =>
+  import("./components/admin/SubscriberManagement")
+);
+
+/* ========= Auth Guard ========= */
+function ProtectedAdmin({ children }) {
+  const isAdmin = localStorage.getItem("isAdmin") === "true";
+  return isAdmin ? children : <Navigate to="/admin-login" replace />;
+}
 
 function App() {
   const [showSplash, setShowSplash] = useState(true);
@@ -31,8 +47,10 @@ function App() {
   return (
     <>
       <Navbar />
+
       <Suspense fallback={<div style={{ textAlign: "center", marginTop: 50 }}>Loading...</div>}>
         <Routes>
+          {/* ===== Public ===== */}
           <Route path="/" element={<Home />} />
           <Route path="/about" element={<About />} />
           <Route path="/projects" element={<Projects />} />
@@ -40,34 +58,29 @@ function App() {
           <Route path="/team" element={<Team />} />
           <Route path="/news-events" element={<NewsEvents />} />
           <Route path="/blog" element={<Blog />} />
+          <Route path="/blog/:id" element={<BlogDetail />} />
           <Route path="/gallery" element={<Gallery />} />
           <Route path="/faqs" element={<FAQs />} />
           <Route path="/contact" element={<Contact />} />
-          <Route path="/carousel" element={<ImageCarousel />} />
           <Route path="/testimonials" element={<Testimonials />} />
+
+          {/* ===== Admin Login ===== */}
           <Route path="/admin-login" element={<AdminLogin />} />
-          <Route path="/blog/:id" element={<BlogDetail />} />
-          
+
+          {/* ===== 🔥 REAL ADMIN ROUTES (FIXED) ===== */}
           <Route
-            path="/admin"
+            path="/admin/*"
             element={
-              localStorage.getItem("isAdmin") === "true" ? (
-                <AdminPage/>
-              ) : (
-                <Navigate to="/admin-login" />
-              )
+              <ProtectedAdmin>
+                <AdminLayout />
+              </ProtectedAdmin>
             }
-          />
-          <Route
-            path="/admin/news-events"
-            element={
-              localStorage.getItem("isAdmin") === "true" ? (
-                <AdminPage/>
-              ) : (
-                <Navigate to="/admin-login" />
-              )
-            }
-          />
+          >
+            <Route index element={<BlogManager />} />
+            <Route path="news-events" element={<NewsEventsManagement />} />
+            <Route path="contact-messages" element={<ContactAdmin />} />
+            <Route path="subscribers" element={<SubscriberManagement />} />
+          </Route>
         </Routes>
       </Suspense>
     </>

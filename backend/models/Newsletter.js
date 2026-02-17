@@ -1,66 +1,33 @@
 import mongoose from "mongoose";
 
-const NewsletterSchema = new mongoose.Schema(
+const sectionSchema = new mongoose.Schema(
   {
-    title: {
-      type: String,
-      required: [true, "Title is required"],
-      trim: true,
-      minlength: [3, "Title must be at least 3 characters"],
-      maxlength: [150, "Title can't exceed 150 characters"],
-    },
-    description: {
-      type: String,
-      trim: true,
-      default: "",
-      maxlength: [2000, "Description too long"],
-    },
-    author: {
-      type: String,
-      default: "Admin",
-      trim: true,
-    },
-    image: {
-      type: String,
-      default: null,
-    },
-    pdf: {
-      type: String,
-      default: null,
-    },
-    pdfText: {
-      type: String,
-      default: "",
-    },
+    text: { type: String, required: true },
+    image: { type: String },
     imagePosition: {
       type: String,
-      enum: ["top", "middle", "bottom"],
-      default: "top",
+      enum: ["left", "right"],
+      default: "left",
     },
-    published: {
-      type: Boolean,
-      default: true,
-    },
-    slug: {
+    textAlign: {
       type: String,
-      unique: true,
-      sparse: true,
+      enum: ["left", "right", "center", "justify"],
+      default: "left",
     },
   },
-  {
-    timestamps: true,
-  }
+  { _id: false }
 );
 
-// Custom validation: at least one of image or pdf must be present
-NewsletterSchema.pre("validate", function (next) {
-  if (!this.image && !this.pdf) {
-    this.invalidate("image", "Either image or PDF is required.");
-    this.invalidate("pdf", "Either image or PDF is required.");
-  }
-  next();
-});
+const newsletterSchema = new mongoose.Schema(
+  {
+    title: { type: String, required: true, trim: true },
+    author: { type: String, required: true },
+    coverImage: { type: String },
+    published: { type: Boolean, default: false },
+    publishedAt: { type: Date },
+    sections: [sectionSchema],
+  },
+  { timestamps: true }
+);
 
-const Newsletter = mongoose.model("Newsletter", NewsletterSchema);
-
-export default Newsletter;
+export default mongoose.model("Newsletter", newsletterSchema);

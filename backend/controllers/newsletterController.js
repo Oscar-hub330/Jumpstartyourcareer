@@ -1,93 +1,98 @@
-/* eslint-disable no-undef */
 import Newsletter from "../models/Newsletter.js";
-import fs from "fs";
-import path from "path";
+import { asyncHandler } from "../utils/asyncHandler.js";
 
-const deleteFileIfExists = (filename) => {
-  if (!filename) return;
-  const filePath = path.join(process.env.UPLOAD_DIR, filename);
-  if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-};
+/* ================= GET ALL ================= */
+export const getAll = asyncHandler(async (req, res) => {
+  const newsletters = await Newsletter.find().sort({ createdAt: -1 });
+  res.json(newsletters);
+});
+
+/* ================= GET ONE ================= */
+export const getOne = asyncHandler(async (req, res) => {
+  const newsletter = await Newsletter.findById(req.params.id);
+  if (!newsletter) {
+    res.status(404);
+    throw new Error("Newsletter not found");
+  }
+  res.json(newsletter);
+});
 
 /* ================= CREATE ================= */
-export const createNewsletter = async (req, res) => {
-  try {
-    const { title, description, author, imagePosition, pdfText } = req.body;
-    const imageFile = req.files?.image?.[0] || null;
-    const pdfFile = req.files?.pdf?.[0] || null;
+export const create = asyncHandler(async (req, res) => {
+  const { title, author, sections } = req.body;
 
-
-    if (!title) {
-      return res.status(400).json({ error: "Title is required" });
-    }
-
-    let image = null;
-    let pdf = null;
-
-    if (imageFile && imageFile.mimetype.startsWith("image/")) {
-      image = imageFile.filename;
-    }
-    if (pdfFile && pdfFile.mimetype === "application/pdf") {
-      pdf = pdfFile.filename;
-    }
-
-    const newsletter = await Newsletter.create({
-      title,
-      description,
-      author,
-      image,
-      pdf,
-      pdfText,
-      imagePosition,
-    });
-
-    res.status(201).json(newsletter);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+  if (!title || !author) {
+    res.status(400);
+    throw new Error("Title and author required");
   }
-};
 
-/* ================= READ ================= */
-export const getNewsletters = async (_, res) => {
-  try {
-    const newsletters = await Newsletter.find().sort({ createdAt: -1 });
-    res.json(newsletters);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+  const parsedSections = JSON.parse(sections || "[]");
+
+  let sectionImages = [];
+  if (req.files?.sectionImages) {
+    sectionImages = req.files.sectionImages.map(
+      (file) => `/uploads/newsletters/${file.filename}`
+    );
   }
-};
+
+  const formattedSections = parsedSections.map((sec, index) => ({
+    ...sec,
+    image: sectionImages[index] || null,
+  }));
+
+  const newsletter = await Newsletter.create({
+    title,
+    author,
+    coverImage: req.files?.coverImage
+      ? `/uploads/newsletters/${req.files.coverImage[0].filename}`
+      : null,
+    sections: formattedSections,
+  });
+
+  res.status(201).json(newsletter);
+});
 
 /* ================= UPDATE ================= */
-export const updateNewsletter = async (req, res) => {
-  try {
-    const newsletter = await Newsletter.findById(req.params.id);
-    if (!newsletter) {
-      return res.status(404).json({ error: "Newsletter not found" });
-    }
-
-    const { title, description, author, imagePosition, pdfText } = req.body;
-    const imageFile = req.files?.image?.[0] || null;
-    const pdfFile = req.files?.pdf?.[0] || null;
-
-    // Handle file updates
-    if (imageFile || pdfFile) {
-      // Remove old files if they exist
-      if (newsletter.image) deleteFileIfExists(newsletter.image);
-      if (newsletter.pdf) deleteFileIfExists(newsletter.pdf);
-
-      newsletter.image = imageFile ? imageFile.filename : null;
-      newsletter.pdf = pdfFile ? pdfFile.filename : null;
-      newsletter.pdfText = pdfFile ? pdfText || "" : newsletter.pdfText;
-    }
-
-    newsletter.title = title ?? newsletter.title;
-    newsletter.description = description ?? newsletter.description;
-    newsletter.author = author ?? newsletter.author;
-    newsletter.imagePosition = imagePosition ?? newsletter.imagePosition;
-
-    await newsletter.save();
-    res.json(newsletter);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+export const update = asyncHandler(async (req, res) => {
+  const newsletter = await Newsletter.findById(req.params.id);
+  if (!newsletter) {
+    res.status(404);
+    throw new Error("Newsletter not found");
   }
-};
+
+  const { title, author, published, sections } = req.body;
+
+  if (title) newsletter.title = title;
+  if (author) newsletter.author = author;
+
+  if (published !== undefined) {
+    newsletter.published = published;
+    newsletter.publishedAt = published ? new Date() : null;
+  }
+
+  if (sections) {
+    const parsed = JSON.parse(sections);
+    newsletter.sections = parsed;
+  }
+
+  if (req.files?.coverImage) {
+    newsletter.coverImage =
+      `/uploads/newsletters/${req.files.coverImage[0].filename}`;
+  }
+
+  await newsletter.save();
+
+  res.json(newsletter);
+});
+
+/* ================= DELETE ================= */
+export const remove = asyncHandler(async (req, res) => {
+  const newsletter = await Newsletter.findById(req.params.id);
+  if (!newsletter) {
+    res.status(404);
+    throw new Error("Newsletter not found");
+  }
+
+  await newsletter.deleteOne();
+  res.json({ message: "Deleted successfully" });
+});

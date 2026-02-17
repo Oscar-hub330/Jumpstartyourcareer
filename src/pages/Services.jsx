@@ -58,10 +58,10 @@ const services = [
 ];
 
 const impactStats = [
-  { value: "10,000+", label: "Lives Impacted" },
-  { value: "50+", label: "Communities Served" },
-  { value: "7", label: "Core Programs" },
-  { value: "95%", label: "Success Rate" },
+  { value: "760+", label: "Lives Impacted" },
+  { value: "7+", label: "Communities Served" },
+  { value: "10", label: "Core Programs" },
+  { value: "85%", label: "Success Rate" },
 ];
 
 const whyChooseUs = [
@@ -81,9 +81,9 @@ const whyChooseUs = [
       "Focus on long-term outcomes that create lasting change and self-sufficiency.",
   },
   {
-    title: "Continuous Support",
+    title: "Inclusive Programs",
     description:
-      "Ongoing mentorship and resources to ensure participant success.",
+      "Finding talent and building a future that is inclusive of all, regardless of background or circumstance.",
   },
 ];
 

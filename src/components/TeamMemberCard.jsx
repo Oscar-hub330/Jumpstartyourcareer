@@ -1,32 +1,23 @@
 /* eslint-disable react/prop-types */
 import React from "react";
 
-const TeamMemberCard = ({
-  image,
-  name,
-  surname,
-  position,
-  featured = false,
-}) => {
+const TeamMemberCard = ({ name, surname, position, image }) => {
   return (
-    <div
-      className={`bg-white rounded-xl p-5 text-center shadow-sm ${
-        featured ? "border border-[#fea434]/30" : ""
-      }`}
-    >
-      <img
-        src={image}
-        alt={`${name} ${surname}`}
-        className="w-24 h-24 rounded-full mx-auto mb-4 object-cover"
-      />
+    <div className="flex flex-col items-center text-center bg-white shadow-lg rounded-xl p-6 hover:scale-105 transition-transform duration-300">
+      {/* Image */}
+      <div className="w-48 h-48 md:w-56 md:h-56 mb-4 rounded-full overflow-hidden border-4 border-[#fea434]">
+        <img
+          src={image}
+          alt={`${name} ${surname}`}
+          className="w-full h-full object-cover"
+        />
+      </div>
 
-      <h3 className="text-base font-semibold text-gray-900">
-        {name} {surname}
-      </h3>
+      {/* Name */}
+      <h3 className="text-lg md:text-xl font-semibold">{name} {surname}</h3>
 
-      <p className="text-sm font-medium text-[#fea434] mt-1">
-        {position}
-      </p>
+      {/* Position */}
+      <p className="text-sm md:text-base text-[#555] mt-1">{position}</p>
     </div>
   );
 };

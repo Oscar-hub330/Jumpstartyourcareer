@@ -10,7 +10,7 @@ import BankSetaLogo from "../assets/sponsors/bankseta.webp";
 import TetaLogo from "../assets/sponsors/teta.webp";
 import SasolLogo from "../assets/sponsors/sasol.webp";
 import ChietaLogo from "../assets/sponsors/chieta.webp";
-import VodacomLogo from "../assets/sponsors/vodacom.webp";
+//import VodacomLogo from "../assets/sponsors/vodacom.webp";
 import FpmSetaLogo from "../assets/sponsors/fpmseta.webp";
 import PublicWorksLogo from "../assets/sponsors/publicworks.webp";
 import ThaboMbekiFoundationLogo from "../assets/sponsors/ThaboMbekiFoundation.webp";
@@ -23,7 +23,7 @@ import QCTOlogo from "../assets/sponsors/QCTOlogo.webp";
 
 const sponsors = Object.freeze([
   { name: "Thabo Mbeki Foundation", logo: ThaboMbekiFoundationLogo },
-  { name: "Vodacom", logo: VodacomLogo },
+  //{ name: "Vodacom", logo: VodacomLogo },
   { name: "Department of Social Development", logo: DsdLogo },
   { name: "BankSeta", logo: BankSetaLogo },
   { name: "TETA", logo: TetaLogo },

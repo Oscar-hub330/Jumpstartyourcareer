@@ -1,31 +1,37 @@
 import express from "express";
 import {
-  createNewsletter,
-  getNewsletters,
-  updateNewsletter,
+  getAll,
+  getOne,
+  create,
+  update,
+  remove,
 } from "../controllers/newsletterController.js";
-import { upload } from "../middleware/uploadMiddleware.js";
+
+import { upload } from "../middleware/upload.js";
 
 const router = express.Router();
 
-/**
- * Accept EITHER:
- * - image
- * - pdf
- */
+router.get("/", getAll);
+router.get("/:id", getOne);
+
 router.post(
   "/",
   upload.fields([
-    { name: "image", maxCount: 1 },
-    { name: "pdf", maxCount: 1 },
+    { name: "coverImage", maxCount: 1 },
+    { name: "sectionImages" },
   ]),
-  createNewsletter
+  create
 );
 
-router.get("/", getNewsletters);
-router.put("/:id", upload.fields([
-  { name: "image", maxCount: 1 },
-  { name: "pdf", maxCount: 1 },
-]), updateNewsletter);
+router.put(
+  "/:id",
+  upload.fields([
+    { name: "coverImage", maxCount: 1 },
+    { name: "sectionImages" },
+  ]),
+  update
+);
+
+router.delete("/:id", remove);
 
 export default router;

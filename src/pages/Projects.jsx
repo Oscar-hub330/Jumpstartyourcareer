@@ -1,69 +1,109 @@
 /* eslint-disable no-unused-vars */
-import React, { useState, useEffect } from "react";
-import { Box, Container, Grid, Typography, TextField, Tabs, Tab } from "@mui/material";
-import { useNavigate } from "react-router-dom";
+import React, { useState } from "react";
+import {
+  Box,
+  Container,
+  Grid,
+  Typography,
+  TextField,
+  Tabs,
+  Tab,
+} from "@mui/material";
 import ProjectCard from "../components/projects/ProjectCard";
 import { projects } from "../data/projectData";
 
 const Projects = () => {
-  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
 
-  // Preload images
-  useEffect(() => {
-    projects.forEach((project) => {
-      project.images?.forEach((src) => new Image().src = src);
-    });
-  }, []);
-
+  // ✅ filter only (NO image preloading)
   const filteredProjects = projects.filter((project) => {
     const matchesSearch =
       project.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       project.description.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = filterStatus === "all" || project.status === filterStatus;
+
+    const matchesStatus =
+      filterStatus === "all" || project.status === filterStatus;
+
     return matchesSearch && matchesStatus;
   });
 
   return (
     <Box sx={{ py: 4, backgroundColor: "#fff" }}>
       <Container maxWidth="lg">
-        {/* Header */}
+        {/* ================= HEADER ================= */}
         <Box mb={4}>
-          <Typography variant="h4" fontWeight="bold" color="#fea434" >
+          <Typography variant="h4" fontWeight="bold" color="#fea434">
             Our Projects
           </Typography>
+
           <Typography variant="body2" color="#555">
-            Explore our portfolio of innovative projects and initiatives. From completed successes to ongoing developments, discover how we are making an impact.
+            Explore our portfolio of innovative projects and initiatives.
           </Typography>
         </Box>
 
-        {/* Search + Tabs */}
-        <Box display="flex" flexDirection={{ xs: "column", sm: "row" }} alignItems={{ sm: "center" }} justifyContent="space-between" mb={3} gap={2}>
+        {/* ================= SEARCH + FILTER ================= */}
+        <Box
+          display="flex"
+          flexDirection={{ xs: "column", sm: "row" }}
+          alignItems={{ sm: "center" }}
+          justifyContent="space-between"
+          mb={3}
+          gap={2}
+        >
+          {/* ✅ hover color added here */}
           <TextField
             placeholder="Search projects..."
             variant="outlined"
             size="small"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            sx={{ flexGrow: 1 }}
+            sx={{
+              flexGrow: 1,
+
+              "& .MuiOutlinedInput-root": {
+                "&:hover fieldset": {
+                  borderColor: "#fea434",
+                },
+                "&.Mui-focused fieldset": {
+                  borderColor: "#fea434",
+                },
+              },
+            }}
           />
 
           <Tabs
-            value={filterStatus}
-            onChange={(e, newValue) => setFilterStatus(newValue)}
-            textColor="primary"
-            indicatorColor="primary"
-            sx={{ mt: { xs: 1, sm: 0 } }}
-          >
-            <Tab label={`All Projects (${projects.length})`} value="all" />
-            <Tab label={`Completed (${projects.filter(p => p.status==="completed").length})`} value="completed" />
-            <Tab label={`Ongoing (${projects.filter(p => p.status==="ongoing").length})`} value="ongoing" />
-            <Tab label={`Planned (${projects.filter(p => p.status==="planned").length})`} value="planned" />
-          </Tabs>
+          value={filterStatus}
+          onChange={(e, newValue) => setFilterStatus(newValue)}
+          sx={{
+          "& .MuiTab-root": {
+          textTransform: "none",
+          fontWeight: 100,
+          color: "#666",
+
+          "&:hover": {
+        color: "#fea434",
+      },
+    },
+
+    "& .Mui-selected": {
+      color: "#fea434 !important",
+    },
+
+    "& .MuiTabs-indicator": {
+      backgroundColor: "#fea434",
+    },
+  }}
+>
+  <Tab label="All" value="all" />
+  <Tab label="Completed" value="completed" />
+  <Tab label="Ongoing" value="ongoing" />
+  <Tab label="Planned" value="planned" />
+</Tabs>
+
         </Box>
 
-        {/* Projects Grid */}
+        {/* ================= GRID ================= */}
         <Grid container spacing={3}>
           {filteredProjects.length > 0 ? (
             filteredProjects.map((project, index) => (
@@ -73,7 +113,7 @@ const Projects = () => {
             ))
           ) : (
             <Box textAlign="center" py={6} width="100%">
-              <Typography>No projects found matching your criteria.</Typography>
+              <Typography>No projects found.</Typography>
             </Box>
           )}
         </Grid>

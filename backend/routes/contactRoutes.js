@@ -1,18 +1,33 @@
 import express from "express";
 import ContactMessage from "../models/ContactMessage.js";
-import { createContact } from "../controllers/contactController.js";
+import validator from "validator"; // npm i validator
 
 const router = express.Router();
-router.post("/", createContact);
 
-
-// ================= CREATE MESSAGE =================
+// POST: /api/contact  -> User submits message
 router.post("/", async (req, res) => {
   try {
-    const { name, email, subject, message } = req.body;
+    let { name, email, subject, message } = req.body;
 
+    // Basic required fields
     if (!name || !email || !subject || !message) {
-      return res.status(400).json({ msg: "All fields required" });
+      return res.status(400).json({ message: "All fields are required" });
+    }
+
+    // Trim inputs
+    name = name.trim();
+    email = email.trim().toLowerCase();
+    subject = subject.trim();
+    message = message.trim();
+
+    // Validate email
+    if (!validator.isEmail(email)) {
+      return res.status(400).json({ message: "Invalid email address" });
+    }
+
+    // Limit lengths
+    if (name.length > 120 || subject.length > 200 || message.length > 2000) {
+      return res.status(400).json({ message: "One or more fields exceed allowed length" });
     }
 
     const newMessage = await ContactMessage.create({
@@ -22,50 +37,10 @@ router.post("/", async (req, res) => {
       message,
     });
 
-    res.status(201).json({ msg: "Message sent", data: newMessage });
+    res.status(201).json({ message: "Message sent successfully", data: newMessage });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ msg: "Server error" });
-  }
-});
-
-
-// ================= GET ALL (ADMIN) =================
-router.get("/", async (req, res) => {
-  try {
-    const messages = await ContactMessage.find().sort({ createdAt: -1 });
-    res.json(messages);
-  } catch {
-    res.status(500).json({ msg: "Failed to fetch messages" });
-  }
-});
-
-
-// ================= UPDATE STATUS =================
-router.patch("/:id", async (req, res) => {
-  try {
-    const { status } = req.body;
-
-    const updated = await ContactMessage.findByIdAndUpdate(
-      req.params.id,
-      { status },
-      { new: true }
-    );
-
-    res.json(updated);
-  } catch {
-    res.status(500).json({ msg: "Update failed" });
-  }
-});
-
-
-// ================= DELETE (optional) =================
-router.delete("/:id", async (req, res) => {
-  try {
-    await ContactMessage.findByIdAndDelete(req.params.id);
-    res.json({ msg: "Deleted" });
-  } catch {
-    res.status(500).json({ msg: "Delete failed" });
+    res.status(500).json({ message: "Server error", error: err.message });
   }
 });
 

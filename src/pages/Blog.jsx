@@ -12,6 +12,7 @@ import {
   TextField,
   InputAdornment,
   Stack,
+  Pagination,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import ShareIcon from "@mui/icons-material/Share";
@@ -27,15 +28,17 @@ const Blog = () => {
   const [error, setError] = useState(null);
   const [search, setSearch] = useState("");
 
+  // Pagination state
+  const [page, setPage] = useState(1);
+  const blogsPerPage = 6;
+
   useEffect(() => {
     const fetchBlogs = async () => {
       try {
         const res = await axios.get("http://localhost:4000/api/blogs");
-
         const list = Array.isArray(res.data)
           ? res.data
           : res.data?.data || res.data?.blogs || [];
-
         setBlogs(list);
       } catch (err) {
         console.error(err);
@@ -58,10 +61,21 @@ const Blog = () => {
     );
   }, [blogs, search]);
 
+  /* ========= Pagination ========= */
+  const pageCount = Math.ceil(filteredBlogs.length / blogsPerPage);
+  const currentBlogs = useMemo(() => {
+    const start = (page - 1) * blogsPerPage;
+    return filteredBlogs.slice(start, start + blogsPerPage);
+  }, [page, filteredBlogs]);
+
+  const handlePageChange = (event, value) => {
+    setPage(value);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   /* ========= Share ========= */
   const sharePost = (post) => {
     const url = `${window.location.origin}/blog/${post._id}`;
-
     if (navigator.share) {
       navigator.share({
         title: post.title,
@@ -105,22 +119,13 @@ const Blog = () => {
       <Typography
         variant="h4"
         align="center"
-        sx={{
-          color: "#fea434",
-          fontWeight: 700,
-          mb: 1,
-        }}
+        sx={{ color: "#fea434", fontWeight: 700, mb: 1 }}
       >
         Our Blog
       </Typography>
-
       <Typography
         align="center"
-        sx={{
-          color: "#666",
-          mb: 4,
-          fontSize: "0.95rem",
-        }}
+        sx={{ color: "#666", mb: 4, fontSize: "0.95rem" }}
       >
         Stories, updates and insights.
       </Typography>
@@ -132,7 +137,10 @@ const Blog = () => {
           size="small"
           placeholder="Search blogs..."
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setPage(1); // reset page when searching
+          }}
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
@@ -144,29 +152,28 @@ const Blog = () => {
       </Box>
 
       {/* ================= GRID ================= */}
-      <Grid container spacing={2} alignItems="stretch">
-        {filteredBlogs.length === 0 ? (
+      <Grid container spacing={3} alignItems="stretch">
+        {currentBlogs.length === 0 ? (
           <Typography sx={{ width: "100%", textAlign: "center", mt: 4 }}>
             No blog posts found.
           </Typography>
         ) : (
-          filteredBlogs.map((post) => (
+          currentBlogs.map((post) => (
             <Grid item xs={12} sm={6} md={4} key={post._id}>
               <Card
                 sx={{
-                  height: "100%",
                   display: "flex",
                   flexDirection: "column",
                   borderRadius: 3,
                   border: "1px solid #f1f1f1",
                   boxShadow: "0 2px 6px rgba(0,0,0,0.06)",
+                  overflow: "hidden",
                   transition: "0.25s",
-                  "&:hover": {
-                    transform: "translateY(-4px)",
-                  },
+                  height: "100%", // allows equal height per row
+                  "&:hover": { transform: "translateY(-4px)" },
                 }}
               >
-                {/* ===== IMAGE (fixed height, no overflow) ===== */}
+                {/* IMAGE */}
                 {post.image && (
                   <Box
                     component="img"
@@ -174,23 +181,21 @@ const Blog = () => {
                     alt={post.title}
                     sx={{
                       width: "100%",
-                      height: 180,
+                      height: 150,
                       objectFit: "cover",
                     }}
                   />
                 )}
 
-                {/* ===== CONTENT ===== */}
+                {/* CONTENT */}
                 <CardContent
                   sx={{
-                    p: 2, // compact padding (not zero)
+                    p: 2,
                     display: "flex",
                     flexDirection: "column",
                     flexGrow: 1,
-                    gap: 1,
                   }}
                 >
-                  {/* Title */}
                   <Typography
                     variant="subtitle1"
                     fontWeight={600}
@@ -205,7 +210,6 @@ const Blog = () => {
                     {post.title}
                   </Typography>
 
-                  {/* Text clamp */}
                   <Typography
                     variant="body2"
                     sx={{
@@ -221,8 +225,7 @@ const Blog = () => {
                     {post.content}
                   </Typography>
 
-                  {/* Buttons */}
-                  <Stack direction="row" spacing={1}>
+                  <Stack direction="row" spacing={1} mt={1}>
                     <Button
                       size="small"
                       sx={{ color: "#fea434", textTransform: "none" }}
@@ -230,7 +233,6 @@ const Blog = () => {
                     >
                       Read
                     </Button>
-
                     <Button
                       size="small"
                       startIcon={<ShareIcon />}
@@ -241,7 +243,6 @@ const Blog = () => {
                     </Button>
                   </Stack>
 
-                  {/* Footer */}
                   <Box
                     display="flex"
                     justifyContent="space-between"
@@ -259,27 +260,19 @@ const Blog = () => {
                       >
                         {(post.author || "A")[0]}
                       </Avatar>
-
                       <Typography fontSize="0.75rem">
                         {post.author || "Unknown"}
                       </Typography>
                     </Box>
-
                     <Typography fontSize="0.7rem" color="#888">
                       {moment(post.createdAt).format("LL")}
                     </Typography>
                   </Box>
 
-                  {/* Tags */}
                   {Array.isArray(post.tags) && post.tags.length > 0 && (
-                    <Stack direction="row" flexWrap="wrap" gap={0.5}>
+                    <Stack direction="row" flexWrap="wrap" gap={0.5} mt={1}>
                       {post.tags.map((tag, i) => (
-                        <Chip
-                          key={i}
-                          label={`#${tag}`}
-                          size="small"
-                          sx={{ fontSize: 10 }}
-                        />
+                        <Chip key={i} label={`#${tag}`} size="small" sx={{ fontSize: 10 }} />
                       ))}
                     </Stack>
                   )}
@@ -289,6 +282,18 @@ const Blog = () => {
           ))
         )}
       </Grid>
+
+      {/* ================= PAGINATION ================= */}
+      {pageCount > 1 && (
+        <Box display="flex" justifyContent="center" mt={6}>
+          <Pagination
+            count={pageCount}
+            page={page}
+            onChange={handlePageChange}
+            color="primary"
+          />
+        </Box>
+      )}
     </Box>
   );
 };

@@ -1,187 +1,210 @@
+/* eslint-disable no-unused-vars */
 import React, { useEffect, useState } from "react";
+import axios from "axios";
 import {
   Box,
   Typography,
-  Table,
-  TableHead,
-  TableRow,
-  TableCell,
-  TableBody,
+  Card,
   IconButton,
-  Chip,
   Modal,
-  Button,
-  Pagination,
   Stack,
+  Button,
+  Chip,
   Divider,
 } from "@mui/material";
-import VisibilityIcon from "@mui/icons-material/Visibility";
-import DeleteIcon from "@mui/icons-material/Delete";
-import axios from "axios";
+import { Delete, Visibility, MarkEmailRead, Close } from "@mui/icons-material";
+import { DataGrid } from "@mui/x-data-grid";
 
-const modalStyle = {
-  position: "absolute",
-  top: "50%",
-  left: "50%",
-  transform: "translate(-50%, -50%)",
-  width: "90%",
-  maxWidth: 600,
-  bgcolor: "background.paper",
-  borderRadius: 2,
-  boxShadow: 24,
-  p: 3,
-  maxHeight: "80vh",
-  overflowY: "auto",
-};
+// API endpoint
+const API = "http://localhost:4000/api/admin/contact";
 
 export default function ContactAdmin() {
   const [contacts, setContacts] = useState([]);
-  const [selected, setSelected] = useState(null);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [selected, setSelected] = useState(null);
+  const [open, setOpen] = useState(false);
 
-  const fetchContacts = async (pageNum = 1) => {
-    const res = await axios.get(
-      `http://localhost:4000/api/admin/contact?page=${pageNum}`,
-      {
-        headers: {
-          Authorization: import.meta.env.VITE_ADMIN_TOKEN,
-        },
+  // ✅ Vite-safe admin token
+  const token = import.meta.env.VITE_ADMIN_TOKEN;
+
+  // =========================
+  // FETCH CONTACTS
+  // =========================
+  const fetchContacts = async () => {
+    try {
+      if (!token) {
+        console.error("Admin token missing!");
+        return;
       }
-    );
 
-    setContacts(res.data.contacts);
-    setTotalPages(res.data.totalPages);
+      const res = await axios.get(`${API}?page=${page}`, {
+        headers: { Authorization: token },
+      });
+
+      const dataArray = Array.isArray(res.data.contacts)
+        ? res.data.contacts
+        : [];
+
+      setContacts(
+        dataArray.map((item) => ({
+          _id: item._id || item.id || Math.random(), // fallback
+          name: item.name || "No Name",
+          email: item.email || "No Email",
+          subject: item.subject || "No Subject",
+          message: item.message || "No Message",
+          isRead: item.isRead || false,
+          createdAt: item.createdAt || new Date().toISOString(),
+        }))
+      );
+
+      setTotalPages(res.data.totalPages || 1);
+    } catch (err) {
+      console.error("Failed to fetch contacts:", err.response?.data || err.message);
+      setContacts([]);
+      setTotalPages(1);
+    }
   };
 
   useEffect(() => {
-    fetchContacts(page);
+    fetchContacts();
   }, [page]);
 
-  const markAsRead = async (id) => {
-    await axios.patch(
-      `http://localhost:4000/api/admin/contact/${id}/read`,
-      {},
-      {
-        headers: {
-          Authorization: import.meta.env.VITE_ADMIN_TOKEN,
-        },
-      }
-    );
-    fetchContacts(page);
+  // =========================
+  // ACTIONS
+  // =========================
+  const markRead = async (id) => {
+    try {
+      await axios.patch(`${API}/${id}/read`, {}, { headers: { Authorization: token } });
+      fetchContacts();
+      if (selected?._id === id) setSelected({ ...selected, isRead: true });
+    } catch (err) {
+      console.error("Failed to mark read:", err.response?.data || err.message);
+    }
   };
 
   const deleteContact = async (id) => {
-    if (!window.confirm("Delete this message?")) return;
-
-    await axios.delete(`http://localhost:4000/api/admin/contact/${id}`, {
-      headers: {
-        Authorization: import.meta.env.VITE_ADMIN_TOKEN,
-      },
-    });
-    fetchContacts(page);
+    try {
+      if (!window.confirm("Delete this message?")) return;
+      await axios.delete(`${API}/${id}`, { headers: { Authorization: token } });
+      fetchContacts();
+      if (selected?._id === id) setOpen(false);
+    } catch (err) {
+      console.error("Failed to delete contact:", err.response?.data || err.message);
+    }
   };
 
+  const openModal = (row) => {
+    if (!row) return;
+    setSelected(row);
+    setOpen(true);
+  };
+
+  // =========================
+  // TABLE COLUMNS
+  // =========================
+  const columns = [
+    { field: "name", headerName: "Name", flex: 1 },
+    { field: "email", headerName: "Email", flex: 1.2 },
+    { field: "subject", headerName: "Subject", flex: 1.2 },
+    {
+      field: "isRead",
+      headerName: "Status",
+      width: 120,
+      renderCell: (params) =>
+        params.value ? (
+          <Chip label="Read" size="small" />
+        ) : (
+          <Chip label="Unread" color="error" size="small" />
+        ),
+    },
+    {
+      field: "createdAt",
+      headerName: "Date",
+      flex: 1,
+      valueGetter: (params) => new Date(params.value).toLocaleDateString(),
+    },
+    {
+      field: "actions",
+      headerName: "Actions",
+      width: 150,
+      renderCell: (params) => (
+        <>
+          <IconButton onClick={() => openModal(params.row)}>
+            <Visibility />
+          </IconButton>
+          <IconButton onClick={() => markRead(params.row._id)}>
+            <MarkEmailRead />
+          </IconButton>
+          <IconButton onClick={() => deleteContact(params.row._id)}>
+            <Delete />
+          </IconButton>
+        </>
+      ),
+    },
+  ];
+
+  // =========================
+  // UI
+  // =========================
   return (
     <Box p={3}>
       <Typography variant="h5" fontWeight={600} mb={2}>
         Contact Messages
       </Typography>
 
-      <Table size="small">
-        <TableHead>
-          <TableRow>
-            <TableCell>Name</TableCell>
-            <TableCell>Email</TableCell>
-            <TableCell>Subject</TableCell>
-            <TableCell>Status</TableCell>
-            <TableCell align="right">Actions</TableCell>
-          </TableRow>
-        </TableHead>
-
-        <TableBody>
-          {contacts.map((c) => (
-            <TableRow key={c._id} hover>
-              <TableCell sx={{ whiteSpace: "nowrap" }}>{c.name}</TableCell>
-              <TableCell>{c.email}</TableCell>
-              <TableCell
-                sx={{
-                  maxWidth: 200,
-                  whiteSpace: "nowrap",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                }}
-              >
-                {c.subject}
-              </TableCell>
-
-              <TableCell>
-                <Chip
-                  size="small"
-                  label={c.isRead ? "Read" : "Unread"}
-                  color={c.isRead ? "default" : "primary"}
-                />
-              </TableCell>
-
-              <TableCell align="right">
-                <IconButton
-                  size="small"
-                  onClick={() => {
-                    setSelected(c);
-                    if (!c.isRead) markAsRead(c._id);
-                  }}
-                >
-                  <VisibilityIcon />
-                </IconButton>
-
-                <IconButton
-                  size="small"
-                  color="error"
-                  onClick={() => deleteContact(c._id)}
-                >
-                  <DeleteIcon />
-                </IconButton>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-
-      <Stack alignItems="center" mt={2}>
-        <Pagination
-          count={totalPages}
-          page={page}
-          onChange={(_, val) => setPage(val)}
+      <Card sx={{ height: 600 }}>
+        <DataGrid
+          rows={contacts || []}
+          columns={columns}
+          getRowId={(row) => row._id || Math.random()}
+          pageSize={10}
+          rowsPerPageOptions={[10]}
+          disableRowSelectionOnClick
+          sx={{ border: 0, "& .MuiDataGrid-row": { fontSize: 14 } }}
         />
-      </Stack>
+      </Card>
 
-      {/* VIEW MODAL */}
-      <Modal open={!!selected} onClose={() => setSelected(null)}>
-        <Box sx={modalStyle}>
+      {/* ================= MODAL ================= */}
+      <Modal open={open} onClose={() => setOpen(false)}>
+        <Box
+          sx={{
+            width: 600,
+            maxHeight: "80vh",
+            overflowY: "auto",
+            bgcolor: "white",
+            p: 3,
+            borderRadius: 3,
+            mx: "auto",
+            mt: "5%",
+            boxShadow: 24,
+          }}
+        >
           {selected && (
             <>
-              <Typography variant="h6" fontWeight={600}>
-                {selected.subject}
-              </Typography>
-
-              <Typography variant="body2" color="text.secondary" mt={0.5}>
-                {selected.name} • {selected.email}
-              </Typography>
+              <Stack direction="row" justifyContent="space-between" alignItems="center">
+                <Typography variant="h6">Message Details</Typography>
+                <IconButton onClick={() => setOpen(false)}>
+                  <Close />
+                </IconButton>
+              </Stack>
 
               <Divider sx={{ my: 2 }} />
 
-              <Typography
-                variant="body1"
-                sx={{
-                  lineHeight: 1.6,
-                  whiteSpace: "pre-wrap",
-                }}
-              >
-                {selected.message}
-              </Typography>
-
-              <Stack direction="row" justifyContent="flex-end" mt={3}>
-                <Button onClick={() => setSelected(null)}>Close</Button>
+              <Stack spacing={2}>
+                <Typography><b>Name:</b> {selected?.name || "N/A"}</Typography>
+                <Typography><b>Email:</b> {selected?.email || "N/A"}</Typography>
+                <Typography><b>Subject:</b> {selected?.subject || "N/A"}</Typography>
+                <Typography sx={{ whiteSpace: "pre-wrap", lineHeight: 1.6, fontSize: 14 }}>
+                  {selected?.message || "No message content"}
+                </Typography>
+                <Button
+                  variant="contained"
+                  onClick={() => markRead(selected._id)}
+                  disabled={selected?.isRead}
+                >
+                  {selected?.isRead ? "Already Read" : "Mark as Read"}
+                </Button>
               </Stack>
             </>
           )}

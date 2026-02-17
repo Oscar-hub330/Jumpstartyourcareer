@@ -1,5 +1,5 @@
-/* eslint-disable no-unused-vars */
-import React, { useState, useEffect, useMemo } from "react";
+/* eslint-disable react/prop-types */
+import React, { useEffect, useState, useMemo } from "react";
 import {
   Box,
   Typography,
@@ -8,230 +8,285 @@ import {
   CardMedia,
   Button,
   Modal,
-  Avatar,
-  TextField,
-  Pagination,
-  IconButton,
   Stack,
   Divider,
-  InputAdornment,
+  IconButton,
+  Container,
+  CircularProgress,
+  TextField,
+  MenuItem,
 } from "@mui/material";
-
-import SearchIcon from "@mui/icons-material/Search";
-import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
-import DownloadIcon from "@mui/icons-material/Download";
-import CloseIcon from "@mui/icons-material/Close";
 import ShareIcon from "@mui/icons-material/Share";
-import WhatsAppIcon from "@mui/icons-material/WhatsApp";
-import FacebookIcon from "@mui/icons-material/Facebook";
-import LinkedInIcon from "@mui/icons-material/LinkedIn";
-
+import CloseIcon from "@mui/icons-material/Close";
 import axios from "axios";
-import Footer from "../components/Footer";
 
 const ACCENT = "#fea434";
-const ITEMS_PER_PAGE = 6;
+const API_URL = `${import.meta.env.VITE_API_URL}/api/newsletters`;
+const BASE_URL = import.meta.env.VITE_API_URL;
+
+const StyledButton = ({ children, ...props }) => (
+  <Button
+    {...props}
+    variant="contained"
+    sx={{
+      bgcolor: ACCENT,
+      color: "#fff",
+      fontWeight: 600,
+      fontSize: { xs: 12, sm: 14, md: 15 },
+      py: { xs: 0.8, sm: 1, md: 1.1 },
+      px: { xs: 1.5, sm: 2, md: 3 },
+      minWidth: { xs: 80, sm: 100, md: 120 },
+      whiteSpace: "nowrap",
+      "&:hover": { bgcolor: ACCENT },
+      textTransform: "none",
+    }}
+  >
+    {children}
+  </Button>
+);
 
 export default function NewsEvents() {
   const [newsletters, setNewsletters] = useState([]);
-  const [pdfs, setPdfs] = useState([]);
   const [selected, setSelected] = useState(null);
   const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [visibleCount, setVisibleCount] = useState(6); 
   const [search, setSearch] = useState("");
-  const [page, setPage] = useState(1);
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [sortOrder, setSortOrder] = useState("newest");
 
-  /* ================= FETCH ================= */
   useEffect(() => {
-    const fetch = async () => {
+    const fetchData = async () => {
       try {
-        const res = await axios.get("http://localhost:4000/api/newsletters");
-        const allData = res.data || [];
-        setNewsletters(allData.filter((n) => !n.pdf));
-        setPdfs(allData.filter((n) => n.pdf));
+        const res = await axios.get(API_URL);
+        setNewsletters(Array.isArray(res.data) ? res.data : []);
       } catch (error) {
-        console.error("Failed to fetch newsletters:", error);
+        console.error("Failed to fetch newsletters:", error.response?.data || error.message);
         setNewsletters([]);
-        setPdfs([]);
+      } finally {
+        setLoading(false);
       }
     };
-    fetch();
+    fetchData();
   }, []);
 
-  /* ================= FILTER ================= */
-  const filtered = useMemo(() => {
-    return newsletters.filter((n) =>
-      `${n.title} ${n.description}`.toLowerCase().includes(search.toLowerCase())
-    );
-  }, [newsletters, search]);
-
-  const paginated = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
-  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
-
-  const formatDate = (d) => new Date(d).toLocaleDateString();
-
   const shareNewsletter = (nl) => {
-    const url = window.location.href;
-    if (navigator.share) {
-      navigator.share({ title: nl.title, text: nl.description, url });
-      return;
-    }
-    window.open(
-      `https://wa.me/?text=${encodeURIComponent(nl.title + " " + url)}`
+    const shareUrl = `${window.location.origin}/news/${nl.slug || nl._id}`;
+    if (navigator.share) navigator.share({ title: nl.title, url: shareUrl });
+    else window.open(`https://wa.me/?text=${encodeURIComponent(nl.title + " " + shareUrl)}`);
+  };
+
+  const renderSection = (sec, index) => {
+    if (!sec.text && !sec.image) return null;
+    return (
+      <Box key={index} sx={{ mb: 3, width: "100%" }}>
+        <Stack
+          direction={{
+            xs: "column",
+            md:
+              sec.imagePosition === "left"
+                ? "row"
+                : sec.imagePosition === "right"
+                ? "row-reverse"
+                : "column",
+          }}
+          spacing={2}
+          alignItems="center"
+        >
+          {sec.image && (
+            <Box
+              component="img"
+              src={`${BASE_URL}${sec.image}`}
+              alt="Newsletter"
+              loading="lazy"
+              sx={{
+                width: sec.imagePosition === "center" ? "100%" : { xs: "100%", md: "45%" },
+                maxHeight: 350,
+                objectFit: "cover",
+                borderRadius: 2,
+                boxShadow: 2,
+              }}
+              onError={(e) => (e.target.style.display = "none")}
+            />
+          )}
+          {sec.text && (
+            <Typography sx={{ flex: 1, textAlign: sec.textAlign || "left", lineHeight: 1.8, color: "#444" }}>
+              {sec.text}
+            </Typography>
+          )}
+        </Stack>
+      </Box>
     );
   };
+
+  const filteredNewsletters = useMemo(() => {
+    let arr = newsletters.filter((nl) => {
+      const titleMatch = nl.title.toLowerCase().includes(search.toLowerCase());
+      let dateMatch = true;
+      if (startDate) dateMatch = new Date(nl.publishedAt) >= new Date(startDate);
+      if (dateMatch && endDate) dateMatch = new Date(nl.publishedAt) <= new Date(endDate);
+      return titleMatch && dateMatch;
+    });
+
+    arr.sort((a, b) => {
+      const aDate = new Date(a.publishedAt);
+      const bDate = new Date(b.publishedAt);
+      return sortOrder === "newest" ? bDate - aDate : aDate - bDate;
+    });
+
+    return arr;
+  }, [newsletters, search, startDate, endDate, sortOrder]);
+
+  const paginatedNewsletters = useMemo(() => filteredNewsletters.slice(0, visibleCount), [filteredNewsletters, visibleCount]);
+
+  const isNew = (nl) => {
+    if (!nl.publishedAt) return false;
+    const diffDays = (new Date() - new Date(nl.publishedAt)) / (1000 * 3600 * 24);
+    return diffDays <= 7;
+  };
+
+  const NewsletterCard = ({ nl }) => (
+    <Card
+      sx={{
+        borderRadius: 3,
+        display: "flex",
+        flexDirection: "column",
+        height: "100%",
+        transition: "0.3s",
+        "&:hover": { transform: "translateY(-5px)", boxShadow: 5 },
+        border: isNew(nl) ? `2px solid ${ACCENT}` : "none",
+      }}
+    >
+      {nl.coverImage && (
+        <CardMedia
+          component="img"
+          image={`${BASE_URL}${nl.coverImage}`}
+          alt={nl.title}
+          sx={{ height: 200, objectFit: "cover" }}
+          onError={(e) => (e.target.style.display = "none")}
+        />
+      )}
+
+      <CardContent sx={{ flex: 1 }}>
+        <Typography fontSize={18} fontWeight={700} mb={0.5}>
+          {nl.title} {isNew(nl) && <Typography component="span" color={ACCENT}>New</Typography>}
+        </Typography>
+
+        {nl.author && (
+          <Typography fontSize={12} color="text.secondary" mb={1}>
+            By: {nl.author.name || nl.author}
+          </Typography>
+        )}
+
+        <Typography fontSize={14} sx={{ color: "#555", lineHeight: 1.6 }}>
+          {nl.sections?.[0]?.text?.length > 120 ? nl.sections[0].text.slice(0, 120) + "..." : nl.sections?.[0]?.text}
+        </Typography>
+
+        <Typography fontSize={12} color="text.secondary" mt={1}>
+          {nl.publishedAt ? new Date(nl.publishedAt).toLocaleDateString() : ""}
+        </Typography>
+
+        <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
+          <StyledButton fullWidth onClick={() => { setSelected(nl); setOpen(true); }}>
+            Read More
+          </StyledButton>
+          <IconButton sx={{ color: ACCENT }} onClick={() => shareNewsletter(nl)} aria-label="share">
+            <ShareIcon />
+          </IconButton>
+        </Stack>
+      </CardContent>
+    </Card>
+  );
 
   return (
     <Box sx={{ bgcolor: "#fff7ed", minHeight: "100vh" }}>
       {/* HERO */}
       <Box
         sx={{
-          py: 6,
+          py: 3,
           textAlign: "center",
           background: `linear-gradient(135deg, ${ACCENT}, #ffb84d)`,
           color: "#fff",
+          mb: 3,
         }}
       >
-        <Typography fontSize={26} fontWeight={600}>
-          Newsletter & Event Archive
+        <Typography fontSize={{ xs: 22, sm: 26, md: 30 }} fontWeight={700}>
+          Newsletter & Events
         </Typography>
       </Box>
 
-      {/* SEARCH */}
-      <Box sx={{ maxWidth: 1200, mx: "auto", p: 3 }}>
-        <TextField
-          fullWidth
-          size="small"
-          placeholder="Search newsletters..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon sx={{ color: "#aaa" }} />
-              </InputAdornment>
-            ),
-          }}
-        />
-      </Box>
-
-      {/* NEWSLETTER GRID */}
-      <Box sx={{ maxWidth: 1200, mx: "auto", px: 3, pb: 6 }}>
-        <Typography fontSize={20} fontWeight={600} sx={{ mb: 2 }}>
-          Newsletters & Events
-        </Typography>
-        <Box
-          sx={{
-            display: "grid",
-            gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr", md: "1fr 1fr 1fr" },
-            gap: 3,
-          }}
-        >
-          {paginated.map((nl) => (
-            <Card key={nl._id} sx={{ borderRadius: 3, display: "flex", flexDirection: "column", height: "100%" }}>
-              <CardMedia
-                component="img"
-                loading="lazy"
-                image={`http://localhost:4000/uploads/${nl.image}`}
-                sx={{ height: 160, objectFit: "cover" }}
-              />
-              <CardContent sx={{ flex: 1 }}>
-                <Typography fontSize={16} fontWeight={600}>
-                  {nl.title}
-                </Typography>
-                <Typography fontSize={13} sx={{ mt: 1, color: "#555" }}>
-                  {nl.description?.slice(0, 100)}...
-                </Typography>
-
-                <Stack direction="row" spacing={1} sx={{ mt: 2, alignItems: "center" }}>
-                  <Avatar sx={{ width: 24, height: 24 }}>{(nl.author || "A")[0]}</Avatar>
-                  <Typography fontSize={12}>{formatDate(nl.createdAt)}</Typography>
-                </Stack>
-
-                <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
-                  <Button
-                    fullWidth
-                    size="small"
-                    variant="contained"
-                    sx={{ bgcolor: ACCENT }}
-                    onClick={() => { setSelected(nl); setOpen(true); }}
-                  >
-                    View
-                  </Button>
-                  <IconButton onClick={() => shareNewsletter(nl)}>
-                    <ShareIcon />
-                  </IconButton>
-                </Stack>
-              </CardContent>
-            </Card>
-          ))}
-        </Box>
-
-        {/* PAGINATION */}
-        <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
-          <Pagination count={totalPages} page={page} onChange={(_, v) => setPage(v)} />
-        </Box>
-      </Box>
-
-      {/* PDF GRID (Visually distinct) */}
-      {pdfs.length > 0 && (
-        <Box sx={{ maxWidth: 1200, mx: "auto", px: 3, pb: 6 }}>
-          <Typography fontSize={20} fontWeight={600} sx={{ mb: 2 }}>
-            PDF Downloads
-          </Typography>
-          <Box
-            sx={{
-              display: "grid",
-              gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr", md: "1fr 1fr 1fr" },
-              gap: 3,
-            }}
+      {/* FILTERS */}
+      <Container maxWidth="lg" sx={{ mb: 3 }}>
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={2} justifyContent="center">
+          <TextField
+            placeholder="Search by title..."
+            value={search}
+            onChange={(e) => { setSearch(e.target.value); setVisibleCount(6); }}
+            sx={{ flex: 1, minWidth: 150 }}
+          />
+          <TextField
+            type="date"
+            value={startDate}
+            onChange={(e) => { setStartDate(e.target.value); setVisibleCount(6); }}
+            sx={{ minWidth: 120 }}
+            InputLabelProps={{ shrink: true }}
+          />
+          <TextField
+            type="date"
+            value={endDate}
+            onChange={(e) => { setEndDate(e.target.value); setVisibleCount(6); }}
+            sx={{ minWidth: 120 }}
+            InputLabelProps={{ shrink: true }}
+          />
+          <TextField
+            select
+            label="Sort"
+            value={sortOrder}
+            onChange={(e) => setSortOrder(e.target.value)}
+            sx={{ minWidth: 120 }}
           >
-            {pdfs.map((pdf) => (
-              <Card
-                key={pdf._id}
-                sx={{
-                  borderRadius: 3,
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  p: 3,
-                  height: 200,
-                  bgcolor: "#f2f2f2",
-                  textAlign: "center",
-                  "&:hover": { boxShadow: 6 },
-                }}
-              >
-                <PictureAsPdfIcon sx={{ fontSize: 60, color: ACCENT, mb: 1 }} />
-                <Typography fontSize={15} fontWeight={600} sx={{ mb: 1 }}>
-                  {pdf.title}
-                </Typography>
-                <Typography fontSize={12} sx={{ color: "#555", mb: 2 }}>
-                  {pdf.description?.slice(0, 60)}...
-                </Typography>
-                <Button
-                  variant="contained"
-                  size="small"
-                  sx={{ bgcolor: ACCENT }}
-                  href={`http://localhost:4000/uploads/${pdf.pdf}`}
-                  target="_blank"
-                >
-                  Open PDF
-                </Button>
-                <IconButton onClick={() => shareNewsletter(pdf)}>
-                  <ShareIcon />
-                </IconButton>
-              </Card>
-            ))}
-          </Box>
-        </Box>
-      )}
+            <MenuItem value="newest">Newest First</MenuItem>
+            <MenuItem value="oldest">Oldest First</MenuItem>
+          </TextField>
+        </Stack>
+      </Container>
 
-      {/* MODAL FOR NEWSLETTERS */}
+      {/* NEWSLETTERS GRID */}
+      <Container maxWidth="lg" sx={{ py: 0 }}>
+        {loading ? (
+          <Box textAlign="center"><CircularProgress /></Box>
+        ) : filteredNewsletters.length === 0 ? (
+          <Typography textAlign="center" color="text.secondary">No newsletters found.</Typography>
+        ) : (
+          <>
+            <Box
+              sx={{
+                display: "grid",
+                gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr", md: "1fr 1fr 1fr" },
+                gap: 3,
+              }}
+            >
+              {paginatedNewsletters.map((nl) => <NewsletterCard key={nl._id} nl={nl} />)}
+            </Box>
+
+            {visibleCount < filteredNewsletters.length && (
+              <Stack alignItems="center" mt={4}>
+                <StyledButton onClick={() => setVisibleCount((prev) => prev + 6)}>
+                  Load More
+                </StyledButton>
+              </Stack>
+            )}
+          </>
+        )}
+      </Container>
+
+      {/* MODAL */}
       <Modal open={open} onClose={() => setOpen(false)}>
         <Box
           sx={{
-            width: { xs: "95%", md: 780 },
-            height: "88vh",
+            width: { xs: "95%", md: 800 },
+            maxHeight: "90vh",
             bgcolor: "#fff",
             borderRadius: 3,
             position: "absolute",
@@ -244,60 +299,34 @@ export default function NewsEvents() {
             overflow: "hidden",
           }}
         >
-          {selected?.image && (
-            <Box sx={{ width: "100%", aspectRatio: "16/7", maxHeight: 160, overflow: "hidden", bgcolor: "#f6f6f6" }}>
-              <img
-                src={`http://localhost:4000/uploads/${selected.image}`}
-                alt=""
-                style={{ width: "100%", height: "100%", objectFit: "cover" }}
-              />
-            </Box>
-          )}
-
-          <Box sx={{ flex: 1, overflowY: "auto", p: 3 }}>
-            <Typography sx={{ fontSize: 17, fontWeight: 600, mb: 1 }}>{selected?.title}</Typography>
-            <Typography sx={{ fontSize: 13.5, lineHeight: 1.75, color: "#444", whiteSpace: "pre-line" }}>
-              {selected?.description}
+          <Box sx={{ flex: 1, overflowY: "auto", p: 3, maxWidth: 720, mx: "auto" }}>
+            <Typography fontSize={{ xs: 18, sm: 20, md: 24 }} fontWeight={700} mb={2}>
+              {selected?.title}
             </Typography>
+
+            {selected?.sections?.map((sec, i) => renderSection(sec, i))}
+
+            {selected?.author && (
+              <Typography fontSize={12} color="text.secondary" mt={2}>
+                By: {selected.author.name || selected.author}
+              </Typography>
+            )}
+
+            {selected?.publishedAt && (
+              <Typography fontSize={12} color="text.secondary" mt={1} textAlign="right">
+                Published: {new Date(selected.publishedAt).toLocaleDateString()}
+              </Typography>
+            )}
           </Box>
 
           <Divider />
-
-          <Stack direction="row" spacing={1} sx={{ p: 1.5, justifyContent: "space-between", alignItems: "center", bgcolor: "#fafafa" }}>
-            <Stack direction="row" spacing={1}>
-              <IconButton href={`https://wa.me/?text=${encodeURIComponent(selected?.title + " " + window.location.href)}`}>
-                <WhatsAppIcon />
-              </IconButton>
-              <IconButton href={`https://www.facebook.com/sharer/sharer.php?u=${window.location.href}`}>
-                <FacebookIcon />
-              </IconButton>
-              <IconButton href={`https://www.linkedin.com/sharing/share-offsite/?url=${window.location.href}`}>
-                <LinkedInIcon />
-              </IconButton>
-            </Stack>
-
-            <Stack direction="row" spacing={1}>
-              {selected?.pdf && (
-                <Button
-                  variant="contained"
-                  size="small"
-                  startIcon={<DownloadIcon />}
-                  sx={{ bgcolor: ACCENT }}
-                  href={`http://localhost:4000/uploads/${selected.pdf}`}
-                  target="_blank"
-                >
-                  Open PDF
-                </Button>
-              )}
-              <Button size="small" startIcon={<CloseIcon />} onClick={() => setOpen(false)}>
-                Close
-              </Button>
-            </Stack>
+          <Stack direction="row" justifyContent="flex-end" sx={{ p: 2 }}>
+            <StyledButton onClick={() => setOpen(false)}>
+              <CloseIcon sx={{ mr: 1 }} /> Close
+            </StyledButton>
           </Stack>
         </Box>
       </Modal>
-
-      <Footer />
     </Box>
   );
 }
