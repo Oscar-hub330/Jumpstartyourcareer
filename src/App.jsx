@@ -1,8 +1,9 @@
 /* eslint-disable react/prop-types */
-import React, { useState, Suspense, lazy } from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
+import React, { useState, Suspense, lazy, useEffect } from "react";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import SplashScreen from "./components/SplashScreen";
+import api from "./services/api";
 
 /* ========= Lazy Pages ========= */
 const Home = lazy(() => import("./pages/Home"));
@@ -19,7 +20,6 @@ const Testimonials = lazy(() => import("./pages/Testimonials"));
 const BlogDetail = lazy(() => import("./pages/BlogDetail"));
 const AdminLogin = lazy(() => import("./pages/AdminLogin"));
 
-
 /* 🔥 ADMIN */
 const AdminLayout = lazy(() => import("./layouts/AdminLayout"));
 const BlogManager = lazy(() => import("./components/admin/BlogManager"));
@@ -31,14 +31,44 @@ const SubscriberManagement = lazy(() =>
   import("./components/admin/SubscriberManagement")
 );
 
-/* ========= Auth Guard ========= */
+/* ========= REAL AUTH GUARD ========= */
 function ProtectedAdmin({ children }) {
-  const isAdmin = localStorage.getItem("isAdmin") === "true";
-  return isAdmin ? children : <Navigate to="/admin-login" replace />;
+  const [loading, setLoading] = useState(true);
+  const [authorized, setAuthorized] = useState(false);
+
+  useEffect(() => {
+    const verify = async () => {
+      try {
+        const token = localStorage.getItem("adminToken");
+
+        if (!token) {
+          setLoading(false);
+          return;
+        }
+
+        await api.get("/admin/verify");
+
+        setAuthorized(true);
+      } catch {
+        localStorage.removeItem("adminToken");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    verify();
+  }, []);
+
+  if (loading) return null;
+
+  return authorized ? children : <Navigate to="/admin-login" replace />;
 }
 
 function App() {
   const [showSplash, setShowSplash] = useState(true);
+  const location = useLocation();
+
+  const isAdminRoute = location.pathname.startsWith("/admin");
 
   if (showSplash) {
     return <SplashScreen onFinish={() => setShowSplash(false)} />;
@@ -46,9 +76,16 @@ function App() {
 
   return (
     <>
-      <Navbar />
+      {/* Hide public Navbar on admin pages */}
+      {!isAdminRoute && <Navbar />}
 
-      <Suspense fallback={<div style={{ textAlign: "center", marginTop: 50 }}>Loading...</div>}>
+      <Suspense
+        fallback={
+          <div style={{ textAlign: "center", marginTop: 50 }}>
+            Loading...
+          </div>
+        }
+      >
         <Routes>
           {/* ===== Public ===== */}
           <Route path="/" element={<Home />} />
@@ -67,7 +104,7 @@ function App() {
           {/* ===== Admin Login ===== */}
           <Route path="/admin-login" element={<AdminLogin />} />
 
-          {/* ===== 🔥 REAL ADMIN ROUTES (FIXED) ===== */}
+          {/* ===== Protected Admin Routes ===== */}
           <Route
             path="/admin/*"
             element={
@@ -81,6 +118,9 @@ function App() {
             <Route path="contact-messages" element={<ContactAdmin />} />
             <Route path="subscribers" element={<SubscriberManagement />} />
           </Route>
+
+          {/* Optional 404 */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>
     </>

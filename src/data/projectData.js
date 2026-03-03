@@ -1,8 +1,8 @@
 // src/data/projectData.js
 
-import ContractSigning from "../assets/contractsigning.webp";
+import ContractSigning from "../assets/contractsigning.jpeg";
 import ContractSigning2 from "../assets/contractsigning2.webp";
-import ContractSigning3 from "../assets/contractsigning3.webp";
+import ContractSigning3 from "../assets/contractSigning3.jpeg";
 import Graduates1 from "../assets/graduates1.webp";
 import Graduates2 from "../assets/graduates2.webp";
 import Graduates3 from "../assets/graduates3.webp";
@@ -18,7 +18,7 @@ import Sewing3 from "../assets/sewing3.webp";
 import Equip1 from "../assets/equip1.webp";
 import Equip2 from "../assets/equip2.webp";
 import Equip3 from "../assets/equip3.webp";
-import Energy1 from "../assets/energy1.webp";
+import Energy1 from "../assets/energy1.jpeg";
 import Energy2 from "../assets/energy2.webp";
 import Energy3 from "../assets/energy3.webp";
 

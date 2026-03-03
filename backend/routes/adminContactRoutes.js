@@ -3,37 +3,43 @@
 import express from "express";
 import mongoose from "mongoose";
 import ContactMessage from "../models/ContactMessage.js";
-import adminAuth from "../middleware/adminAuth.js";
 import nodemailer from "nodemailer";
 
 const router = express.Router();
 
-// ========================
-// ADMIN AUTH REQUIRED
-// ========================
-router.use(adminAuth);
+/*
+  IMPORTANT:
+  DO NOT add requireAdmin here.
+  It is already applied in server.js:
 
-// ========================
-// Nodemailer transporter
-// ========================
+  app.use("/api/admin/contact", requireAdmin, adminRoutes);
+*/
+
+/* ========================
+   Nodemailer transporter
+======================== */
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
   port: parseInt(process.env.SMTP_PORT) || 587,
-  secure: false, // false for TLS
+  secure: false,
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
   },
 });
 
-transporter.verify((err, success) => {
-  if (err) console.error("❌ SMTP transporter error:", err);
-  else console.log("✅ SMTP transporter ready");
+// Verify SMTP once on startup
+transporter.verify((err) => {
+  if (err) {
+    console.error("❌ SMTP transporter error:", err);
+  } else {
+    console.log("✅ SMTP transporter ready");
+  }
 });
 
-// ========================
-// DEBUG ROUTE (Check DB)
-// ========================
+/* ========================
+   DEBUG ROUTE (Optional)
+======================== */
 router.get("/debug", async (req, res) => {
   try {
     const count = await ContactMessage.countDocuments();
@@ -46,9 +52,9 @@ router.get("/debug", async (req, res) => {
   }
 });
 
-// ========================
-// GET CONTACTS WITH PAGINATION
-// ========================
+/* ========================
+   GET CONTACTS (Paginated)
+======================== */
 router.get("/", async (req, res) => {
   try {
     const page = Math.max(1, parseInt(req.query.page) || 1);
@@ -62,14 +68,8 @@ router.get("/", async (req, res) => {
 
     const totalMessages = await ContactMessage.countDocuments();
 
-    // Format date before sending
-    const formattedContacts = contacts.map(c => ({
-      ...c,
-      createdAt: c.createdAt ? new Date(c.createdAt).toLocaleString() : "N/A",
-    }));
-
     res.json({
-      contacts: formattedContacts,
+      contacts,
       totalMessages,
       totalPages: Math.ceil(totalMessages / limit),
       currentPage: page,
@@ -80,13 +80,14 @@ router.get("/", async (req, res) => {
   }
 });
 
-// ========================
-// MARK AS READ
-// ========================
+/* ========================
+   MARK AS READ
+======================== */
 router.patch("/:id/read", async (req, res) => {
   try {
-    if (!mongoose.Types.ObjectId.isValid(req.params.id))
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
       return res.status(400).json({ message: "Invalid id" });
+    }
 
     const updated = await ContactMessage.findByIdAndUpdate(
       req.params.id,
@@ -94,8 +95,9 @@ router.patch("/:id/read", async (req, res) => {
       { new: true }
     );
 
-    if (!updated)
+    if (!updated) {
       return res.status(404).json({ message: "Message not found" });
+    }
 
     res.json(updated);
   } catch (err) {
@@ -104,18 +106,20 @@ router.patch("/:id/read", async (req, res) => {
   }
 });
 
-// ========================
-// DELETE CONTACT
-// ========================
+/* ========================
+   DELETE CONTACT
+======================== */
 router.delete("/:id", async (req, res) => {
   try {
-    if (!mongoose.Types.ObjectId.isValid(req.params.id))
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
       return res.status(400).json({ message: "Invalid id" });
+    }
 
     const deleted = await ContactMessage.findByIdAndDelete(req.params.id);
 
-    if (!deleted)
+    if (!deleted) {
       return res.status(404).json({ message: "Message not found" });
+    }
 
     res.json({ message: "Deleted successfully" });
   } catch (err) {
@@ -124,25 +128,27 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
-// ========================
-// REPLY TO CONTACT VIA EMAIL
-// ========================
+/* ========================
+   REPLY TO CONTACT
+======================== */
 router.post("/:id/reply", async (req, res) => {
   try {
     const { message } = req.body;
 
-    if (!message)
+    if (!message) {
       return res.status(400).json({ message: "Reply message required" });
+    }
 
-    if (!mongoose.Types.ObjectId.isValid(req.params.id))
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
       return res.status(400).json({ message: "Invalid id" });
+    }
 
     const contact = await ContactMessage.findById(req.params.id);
 
-    if (!contact)
+    if (!contact) {
       return res.status(404).json({ message: "Message not found" });
+    }
 
-    // Send email via SMTP
     await transporter.sendMail({
       from: `"Jumpstart Admin" <${process.env.SMTP_USER}>`,
       to: contact.email,
@@ -151,15 +157,20 @@ router.post("/:id/reply", async (req, res) => {
       html: `<p>${message.replace(/\n/g, "<br>")}</p>`,
     });
 
-    // Automatically mark as read & replied
     contact.isRead = true;
     contact.isReplied = true;
     await contact.save();
 
-    res.json({ message: "Reply sent successfully", contact });
+    res.json({
+      message: "Reply sent successfully",
+      contact,
+    });
   } catch (err) {
-    console.error("Failed to send reply:", err);
-    res.status(500).json({ message: "Failed to send reply", error: err.message });
+    console.error("Reply error:", err);
+    res.status(500).json({
+      message: "Failed to send reply",
+      error: err.message,
+    });
   }
 });
 

@@ -20,10 +20,7 @@ import { useEffect, useState, useMemo } from "react";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
-
-// ✅ Use frontend env variable with /api prefix
-const API = import.meta.env.VITE_API_URL || "http://localhost:4000";
-const ADMIN_TOKEN = import.meta.env.VITE_ADMIN_TOKEN || "supersecret123";
+import api from "../../services/api";
 
 const PAGE_SIZE = 10;
 
@@ -64,30 +61,20 @@ const SubscriberManagement = () => {
 
   // Fetch subscribers
   const fetchSubscribers = async () => {
-    setLoading(true);
-    setError("");
-    try {
-      const res = await fetch(`${API}/api/admin/subscribers`, {
-        headers: { "x-admin-token": ADMIN_TOKEN },
-      });
+  setLoading(true);
+  setError("");
 
-      if (res.status === 403) {
-        setError("Forbidden: Admin access only");
-        setSubscribers([]);
-        return;
-      }
-
-      if (!res.ok) throw new Error(`Error: ${res.statusText}`);
-      const data = await res.json();
-      setSubscribers(data);
-    } catch (err) {
-      console.error(err);
-      setError("Failed to fetch subscribers");
-      setSubscribers([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+  try {
+    const res = await api.get("/admin/subscribers");
+    setSubscribers(res.data);
+  } catch (err) {
+    console.error(err);
+    setError("Unauthorized or failed to fetch subscribers");
+    setSubscribers([]);
+  } finally {
+    setLoading(false);
+  }
+};
 
   useEffect(() => {
     fetchSubscribers();
@@ -95,39 +82,34 @@ const SubscriberManagement = () => {
 
   // Delete single subscriber
   const handleDelete = async (id) => {
-    if (!confirm("Are you sure you want to delete this subscriber?")) return;
-    try {
-      const res = await fetch(`${API}/api/admin/subscribers/${id}`, {
-        method: "DELETE",
-        headers: { "x-admin-token": ADMIN_TOKEN },
-      });
-      if (!res.ok) throw new Error("Delete failed");
-      fetchSubscribers();
-    } catch (err) {
-      console.error(err);
-    }
-  };
+  if (!confirm("Are you sure you want to delete this subscriber?")) return;
+
+  try {
+    await api.delete(`/admin/subscribers/${id}`);
+    fetchSubscribers();
+  } catch (err) {
+    console.error(err);
+  }
+};
 
   // Bulk delete
   const handleBulkDelete = async () => {
-    if (selected.length === 0) return;
-    if (!confirm(`Delete ${selected.length} subscriber(s)?`)) return;
+  if (selected.length === 0) return;
+  if (!confirm(`Delete ${selected.length} subscriber(s)?`)) return;
 
-    try {
-      await Promise.all(
-        selected.map((id) =>
-          fetch(`${API}/api/admin/subscribers/${id}`, {
-            method: "DELETE",
-            headers: { "x-admin-token": ADMIN_TOKEN },
-          })
-        )
-      );
-      setSelected([]);
-      fetchSubscribers();
-    } catch (err) {
-      console.error(err);
-    }
-  };
+  try {
+    await Promise.all(
+      selected.map((id) =>
+        api.delete(`/admin/subscribers/${id}`)
+      )
+    );
+
+    setSelected([]);
+    fetchSubscribers();
+  } catch (err) {
+    console.error(err);
+  }
+};
 
   // Export CSV
   const exportCSV = () => {

@@ -1,6 +1,12 @@
 /* eslint-disable react/react-in-jsx-scope */
-import { Box, Typography, Tabs, Tab } from "@mui/material";
-import { Link, useLocation, Outlet } from "react-router-dom";
+import {
+  Box,
+  Typography,
+  Tabs,
+  Tab,
+  Button,
+} from "@mui/material";
+import { Link, useLocation, Outlet, useNavigate } from "react-router-dom";
 import { useMemo } from "react";
 
 const ACCENT = "#fea434";
@@ -17,20 +23,35 @@ const routes = [
 
 const AdminLayout = () => {
   const location = useLocation();
+  const navigate = useNavigate();
 
   /* -------------------------------------------------------
-     ⭐ CRITICAL FIX
-     Longest path first → prevents "/admin" hijacking others
+     SAFER PATH MATCHING
+     Prevents "/admin" hijacking other routes
   ------------------------------------------------------- */
   const currentTab = useMemo(() => {
-    const sorted = [...routes].sort((a, b) => b.path.length - a.path.length);
-
-    const match = sorted.find((r) =>
-      location.pathname.startsWith(r.path)
+    const sorted = [...routes].sort(
+      (a, b) => b.path.length - a.path.length
     );
 
-    return match?.path || "/admin";
+    const match = sorted.find(
+      (r) =>
+        location.pathname === r.path ||
+        location.pathname.startsWith(r.path + "/")
+    );
+
+    return match?.path || false;
   }, [location.pathname]);
+
+  /* -------------------------------------------------------
+     LOGOUT HANDLER
+  ------------------------------------------------------- */
+  const handleLogout = () => {
+    localStorage.removeItem("adminToken");
+
+    // Hard redirect ensures full state reset
+    window.location.href = "/admin-login";
+  };
 
   return (
     <Box
@@ -53,13 +74,37 @@ const AdminLayout = () => {
           alignItems: "center",
         }}
       >
-        <Typography fontWeight={600} fontSize={20} color={ACCENT}>
+        <Typography
+          fontWeight={600}
+          fontSize={20}
+          color={ACCENT}
+        >
           Admin Portal
         </Typography>
 
-        <Typography fontSize={13} color="text.secondary">
-          JumpStart Your Career CMS
-        </Typography>
+        <Box display="flex" alignItems="center" gap={3}>
+          <Typography fontSize={13} color="text.secondary">
+            JumpStart Your Career CMS
+          </Typography>
+
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={handleLogout}
+            sx={{
+              borderColor: ACCENT,
+              color: ACCENT,
+              textTransform: "none",
+              fontWeight: 500,
+              "&:hover": {
+                backgroundColor: "rgba(254,164,52,0.12)",
+                borderColor: ACCENT,
+              },
+            }}
+          >
+            Logout
+          </Button>
+        </Box>
       </Box>
 
       {/* ================= TABS ================= */}
@@ -85,7 +130,6 @@ const AdminLayout = () => {
           sx={{
             minHeight: 48,
 
-            /* ---------- BASE TAB ---------- */
             "& .MuiTab-root": {
               textTransform: "none",
               fontWeight: 500,
@@ -98,25 +142,21 @@ const AdminLayout = () => {
               transition:
                 "background-color .18s ease, color .18s ease, transform .05s ease",
 
-              /* hover */
               "&:hover": {
                 color: ACCENT,
                 backgroundColor: "rgba(254,164,52,0.10)",
               },
 
-              /* click feedback */
               "&:active": {
                 transform: "scale(0.97)",
               },
             },
 
-            /* ---------- SELECTED ---------- */
             "& .Mui-selected": {
               color: `${ACCENT} !important`,
               backgroundColor: "rgba(254,164,52,0.14)",
             },
 
-            /* ---------- SELECTED + HOVER (FIX) ---------- */
             "& .Mui-selected:hover": {
               backgroundColor: "rgba(254,164,52,0.22)",
             },
@@ -129,7 +169,6 @@ const AdminLayout = () => {
               value={r.path}
               component={Link}
               to={r.path}
-              replace   /* faster navigation (no history stacking) */
             />
           ))}
         </Tabs>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
-import api from "../services/api";
+import api from "/services/api";
 
 const ProtectedAdmin = ({ children }) => {
   const [loading, setLoading] = useState(true);
@@ -9,15 +9,7 @@ const ProtectedAdmin = ({ children }) => {
   useEffect(() => {
     const verify = async () => {
       try {
-        const token = localStorage.getItem("adminToken");
-
-        if (!token) {
-          setLoading(false);
-          return;
-        }
-
         await api.get("/admin/verify");
-
         setAuthorized(true);
       } catch {
         localStorage.removeItem("adminToken");
