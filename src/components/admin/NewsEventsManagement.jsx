@@ -253,9 +253,8 @@ export default function NewsEventsManagement() {
 
   /* ================= UI ================= */
   return (
-    <Box p={4} bgcolor="#f6f7f9" minHeight="100vh">
-      <Typography variant="h5" mb={3}>
-        Newsletter Management
+    <Box p={0} bgcolor="#f6f7f9" minHeight="0vh">
+      <Typography variant="h10" mb={0}>
       </Typography>
 
       <Tabs value={tab} onChange={(e, v) => setTab(v)} sx={{ mb: 3 }}>
@@ -265,8 +264,8 @@ export default function NewsEventsManagement() {
 
       {/* CREATE TAB */}
       {tab === 0 && (
-        <Grid container spacing={3}>
-          <Grid item xs={12} md={6}>
+        <Grid container spacing={2}>
+          <Grid item xs={6} md={3}>
             <Card sx={{ p: 3 }}>
               <Stack spacing={2}>
                 <TextField label="Title"
